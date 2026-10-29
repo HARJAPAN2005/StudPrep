@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ──────────────────────────────────────────────────────────── */
+:root {
+  /* Background / Foreground */
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  /* Card */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  /* Popover */
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Primary */
+  --primary: #4f46e5;        /* indigo-600 */
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: #f1f5f9;      /* slate-100 */
+  --secondary-foreground: #1e293b;
+
+  /* Muted */
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;  /* slate-500 */
+
+  /* Accent */
+  --accent: #ede9fe;         /* violet-100 */
+  --accent-foreground: #4f46e5;
+
+  /* Destructive */
+  --destructive: #ef4444;    /* red-500 */
+  --destructive-foreground: #ffffff;
+
+  /* Border / Input / Ring */
+  --border: #e2e8f0;         /* slate-200 */
+  --input: #e2e8f0;
+  --ring: #4f46e5;
+
+  /* Border radius */
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0f;
+    --foreground: #f8fafc;
+
+    --card: #0f0f1a;
+    --card-foreground: #f8fafc;
+
+    --popover: #0f0f1a;
+    --popover-foreground: #f8fafc;
+
+    --primary: #6366f1;
+    --primary-foreground: #ffffff;
+
+    --secondary: #1e1e2e;
+    --secondary-foreground: #cbd5e1;
+
+    --muted: #1e1e2e;
+    --muted-foreground: #94a3b8;
+
+    --accent: #312e81;
+    --accent-foreground: #c7d2fe;
+
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #6366f1;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius: var(--radius);
+}
+
+/* ── Base styles ──────────────────────────────────────────────────────────── */
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* ── Focus ring (accessibility) ───────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

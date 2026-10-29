@@ -9,12 +9,28 @@ import { Label } from "@/components/ui/label";
 import { FormAlert, FieldError } from "@/components/ui/form-alert";
 import { Spinner } from "@/components/ui/spinner";
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  unauthorized: "Please sign in to access that protected page.",
+  admin_required: "Administrator credentials are required to access the admin portal.",
+  session_expired: "Your session has expired. Please sign in again to continue.",
+  auth_callback_failed: "The authentication link was invalid or has expired. Please sign in with your email and password.",
+};
+
+interface LoginFormProps {
+  redirectTo?: string;
+  error?: string;
+}
+
 /**
  * Login form — uses React useActionState to wire the server action.
- * Renders inline field errors and an action-level error/success alert.
+ * Renders inline field errors, an action-level error alert, and handles URL auth errors.
  */
-export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+export function LoginForm({ redirectTo, error }: LoginFormProps) {
   const [state, action, pending] = useActionState(loginAction, undefined);
+
+  const displayError =
+    state?.message ||
+    (error && (AUTH_ERROR_MESSAGES[error] || "Authentication failed. Please sign in again."));
 
   return (
     <form action={action} noValidate className="flex flex-col gap-5">
@@ -22,9 +38,9 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         <input type="hidden" name="redirectTo" value={redirectTo} />
       )}
 
-      {/* Action-level error */}
-      {state?.message && !state.success && (
-        <FormAlert variant="error" message={state.message} />
+      {/* Action-level or URL-redirect error */}
+      {displayError && !state?.success && (
+        <FormAlert variant="error" message={displayError} />
       )}
 
       {/* Email */}
@@ -90,4 +106,3 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
     </form>
   );
 }
-

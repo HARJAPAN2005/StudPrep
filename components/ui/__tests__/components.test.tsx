@@ -67,3 +67,4 @@ describe("Dropzone Component", () => {
     expect(screen.getByText(/Invalid file type/i)).toBeInTheDocument();
   });
 });
+

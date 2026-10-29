@@ -27,12 +27,39 @@ StudPilot handles:
 - **Every database table has RLS enabled**. There are no unprotected public tables.
 - The service-role (admin) client that bypasses RLS is restricted strictly to server-only files (`lib/supabase/admin.ts`) and is never included in client bundles.
 - Next.js 16 Edge Proxy (`proxy.ts`) enforces strict route-level access control:
-  - `/dashboard/*` — requires an authenticated session
-  - `/admin/*` — requires authenticated session with staff/admin role in the `profiles` table
-  - `/exam/*` — requires an authenticated session
+  - `/dashboard/*`, `/exam/*`, `/materials/*`, `/analytics/*`, `/settings/*`, `/profile/*` — require an authenticated session
+  - `/admin/*` — requires an authenticated session with staff/admin role in the `profiles` table
   - `/login`, `/register`, `/sign-in`, `/sign-up` — automatically redirects authenticated users to `/dashboard`
 
-### 3. Answer Key Protection
+### 3. Isolated Admin-Role Authorization Model
+
+Students are strictly prohibited from granting themselves administrative access:
+- **Database Trigger Guard**: `trg_prevent_self_role_elevation` executes `BEFORE UPDATE ON public.profiles`. If `NEW.role != OLD.role` and the invoking user is not an administrator, PostgreSQL raises an exception (`'Unauthorized: Users cannot modify their own role.'`).
+- **RLS Policy Check**: The `profiles: users can update own non-role` policy includes `WITH CHECK (auth.uid() = id AND role = OLD.role)`.
+- **Application Layer Whitelisting**: Server actions (`updateProfileAction`) whitelist only `full_name` via `UpdateProfileSchema` and explicitly reject any `role` payload in the form data.
+- **Server Guard (`preventRoleSelfElevation`)**: Enforces in code that non-admin callers cannot alter user roles.
+
+### 4. Private Materials Storage Bucket & Object Policies
+
+Study materials uploaded by candidates are stored in the private `materials` Supabase Storage bucket:
+- **Bucket Visibility**: `public = false`. Anonymous or unauthenticated access is rejected at the storage gateway.
+- **Path Namespace Isolation**: Uploads strictly follow the namespace convention `materials/{user_id}/{filename}`.
+- **Object RLS Policies**:
+  - `materials: users read own files`: Grants SELECT if `(storage.foldername(name))[1] = auth.uid()::text` OR user is admin.
+  - `materials: users upload to own folder`: Grants INSERT with `WITH CHECK ((storage.foldername(name))[1] = auth.uid()::text)`.
+  - `materials: users delete own files`: Grants DELETE if folder matches `auth.uid()::text` OR user is admin.
+- **Path Traversal Guards**: Server-side helper `verifyStoragePathAccess` rejects path traversal sequences (`..`), leading slashes, and backslashes.
+
+### 5. Server-Side Authorization Helpers (`lib/auth/authorization.ts`)
+
+- `requireUser(supabase)`: Asserts valid JWT session; throws `UnauthorizedError` (401).
+- `requireAdmin(supabase)`: Asserts valid JWT session with `role === 'admin'`; throws `ForbiddenError` (403).
+- `assertResourceOwnership(ownerId, currentUserId, isAdmin)`: Asserts caller owns the record or is admin.
+- `verifyDocumentAccess(supabase, documentId, currentUserId, isAdmin)`: Fetches document from database and confirms ownership. Never relies on client-provided ownership flags.
+- `verifyExamSessionAccess(supabase, sessionId, currentUserId, isAdmin)`: Confirms exam session ownership.
+- `verifyStoragePathAccess(storagePath, currentUserId, isAdmin)`: Validates user namespace prefix and blocks traversal.
+
+### 6. Answer Key Protection
 
 This is the most critical security control for a CBT platform.
 

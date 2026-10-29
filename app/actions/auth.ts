@@ -167,6 +167,12 @@ export async function updateProfileAction(
     return { message: "You must be logged in to update your profile." };
   }
 
+  // Security guard: Reject any attempt to tamper with role via form data
+  const rawRole = formData.get("role");
+  if (rawRole && typeof rawRole === "string") {
+    return { message: "Access denied: Students cannot alter their own account role." };
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({ full_name: parsed.data.full_name })

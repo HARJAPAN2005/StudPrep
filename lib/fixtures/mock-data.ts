@@ -382,3 +382,4 @@ export const MOCK_EXAM_SESSION: ExamSessionFixture = {
     },
   ],
 };
+

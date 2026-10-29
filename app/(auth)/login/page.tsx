@@ -4,30 +4,30 @@ import { LoginForm } from "./login-form";
 import { Spinner } from "@/components/ui/spinner";
 
 export const metadata: Metadata = {
-  title: "Sign in",
-  description: "Sign in to your StudPrep account.",
+  title: "Sign In · StudPilot",
+  description: "Sign in to your StudPilot CBT platform account.",
 };
 
 interface LoginPageProps {
-  searchParams: Promise<{ redirectTo?: string }>;
+  searchParams: Promise<{ redirectTo?: string; error?: string }>;
 }
 
 async function LoginFormWrapper({
   searchParams,
 }: {
-  searchParams: Promise<{ redirectTo?: string }>;
+  searchParams: Promise<{ redirectTo?: string; error?: string }>;
 }) {
-  const { redirectTo } = await searchParams;
-  return <LoginForm redirectTo={redirectTo} />;
+  const { redirectTo, error } = await searchParams;
+  return <LoginForm redirectTo={redirectTo} error={error} />;
 }
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <>
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sign in to continue to StudPrep
+          Sign in to continue to StudPilot
         </p>
       </div>
 

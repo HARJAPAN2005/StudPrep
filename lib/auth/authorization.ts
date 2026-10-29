@@ -221,3 +221,4 @@ export function preventRoleSelfElevation(
     throw new ForbiddenError("Students are prohibited from granting themselves administrative access.");
   }
 }
+

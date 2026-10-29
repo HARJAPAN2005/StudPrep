@@ -262,6 +262,79 @@ export interface Database {
         };
         Relationships: NoRelationships;
       };
+      document_pages: {
+        Row: {
+          id: string;
+          document_id: string;
+          page_number: number;
+          extracted_text: string;
+          word_count: number;
+          has_low_text: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          page_number: number;
+          extracted_text: string;
+          word_count?: number;
+          has_low_text?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          extracted_text?: string;
+          word_count?: number;
+          has_low_text?: boolean;
+        };
+        Relationships: NoRelationships;
+      };
+      document_processing_jobs: {
+        Row: {
+          id: string;
+          document_id: string;
+          uploader_id: string;
+          status: "queued" | "processing" | "completed" | "failed" | "retryable";
+          attempt_count: number;
+          max_attempts: number;
+          error_message: string | null;
+          extraction_warnings: string[];
+          ocr_required: boolean;
+          ocr_applied: boolean;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          uploader_id: string;
+          status?: "queued" | "processing" | "completed" | "failed" | "retryable";
+          attempt_count?: number;
+          max_attempts?: number;
+          error_message?: string | null;
+          extraction_warnings?: string[];
+          ocr_required?: boolean;
+          ocr_applied?: boolean;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: "queued" | "processing" | "completed" | "failed" | "retryable";
+          attempt_count?: number;
+          max_attempts?: number;
+          error_message?: string | null;
+          extraction_warnings?: string[];
+          ocr_required?: boolean;
+          ocr_applied?: boolean;
+          started_at?: string | null;
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: NoRelationships;
+      };
     };
     Views: {
       questions_public: {
@@ -280,6 +353,7 @@ export interface Database {
     Enums: {
       user_role: "student" | "admin";
       document_status: "pending" | "processing" | "ready" | "failed";
+      processing_job_status: "queued" | "processing" | "completed" | "failed" | "retryable";
       question_difficulty: "easy" | "medium" | "hard";
       exam_status: "active" | "submitted" | "expired";
     };

@@ -143,3 +143,4 @@ ALTER TABLE public.documents ADD CONSTRAINT documents_mime_type_check CHECK (
     'text/plain'
   )
 );
+

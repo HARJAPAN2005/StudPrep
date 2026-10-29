@@ -101,9 +101,16 @@ lib/
 4. **Scoring**: Server-side grading evaluates candidate choices against the secure answer key in PostgreSQL, writes the result to `exam_submissions`, and redirects the candidate to `/exam/[id]/results`.
 5. **Review**: The results page displays the verified score, pacing metrics, and pedagogical rationales.
 
-### 3.2 Document Processing & AI Pipeline
-1. **Upload**: User drops a PDF or DOCX file onto the Dropzone.
-2. **Storage**: The file is streamed to a private Supabase Storage bucket (`user-materials`).
-3. **Processing**: Document text is extracted server-side and parsed as untrusted data.
-4. **Question Generation**: AI prompts format extracted sections into structured JSON adhering to `ExamQuestionSchema`.
-5. **Quality Gate**: Generated questions undergo schema validation before insertion into the question bank.
+### 3.2 Document Processing & Ingestion Pipeline
+1. **Upload & Pre-Validation**: Candidate selects a PDF file. Client-side checks enforce the 20MB limit and PDF format.
+2. **Binary Header Verification**: Server action `uploadDocumentAction` inspects the initial byte stream to verify standard `%PDF-` magic bytes (`0x25 0x50 0x44 0x46 0x2D`), strictly rejecting spoofed or executable files.
+3. **Safe Storage Path Generation**: Files are assigned a random UUID `documentId` and stored at `materials/${userId}/${documentId}.pdf`. Original user filenames are retained as metadata only.
+4. **Idempotent Background Ingestion Job**: A job record is created in `document_processing_jobs` (`queued` -> `processing` -> `completed` / `retryable` / `failed`).
+5. **Text Extraction**: Text is extracted page-by-page via `unpdf`, preserving document order and page numbers in `document_pages`.
+6. **Low-Text & Scanned Image Detection**: Pages with low word counts (< 15 words) are flagged with extraction warnings, and scanned documents trigger the pluggable `OcrProvider` fallback interface.
+7. **Per-Page Text Preview**: Candidates inspect verified text segments on `/dashboard/materials/[id]`, retry failed extractions, or preview original files via secure 1-hour signed URLs.
+8. **Rate Limiting**: Candidates are limited to a configurable maximum (10 uploads/hour) via `checkUploadRateLimit`.
+
+### 3.3 AI Question Generation Pipeline (Phase 5)
+1. **Context Formulation**: Sanitized text from `document_pages` is formatted into structured prompts.
+2. **Quality Gate**: Generated questions undergo schema validation before insertion into the question bank.

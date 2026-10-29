@@ -111,6 +111,72 @@ lib/
 7. **Per-Page Text Preview**: Candidates inspect verified text segments on `/dashboard/materials/[id]`, retry failed extractions, or preview original files via secure 1-hour signed URLs.
 8. **Rate Limiting**: Candidates are limited to a configurable maximum (10 uploads/hour) via `checkUploadRateLimit`.
 
-### 3.3 AI Question Generation Pipeline (Phase 5)
-1. **Context Formulation**: Sanitized text from `document_pages` is formatted into structured prompts.
-2. **Quality Gate**: Generated questions undergo schema validation before insertion into the question bank.
+### 3.3 AI Document Intelligence Pipeline (Phase 5)
+
+The AI Document Intelligence pipeline processes ingested syllabus materials and past questions through a bounded, resilient 6-stage architecture:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Ingested PDF Text Pages                         │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 1: Classification & Exam Board Inference                         │
+│ • Infers subject, educational level, exam type (JAMB, WAEC, NECO, etc.)│
+│ • Assigns confidence rating and rationale                              │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Checkpoint saved
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 2: Topic & Subtopic Hierarchy Extraction                         │
+│ • Multi-page bounded chunking with 1-page overlap                      │
+│ • Citations and verbatim evidence references mapped per subtopic       │
+│ • Hierarchies merged and consolidated without loss                     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Checkpoint saved
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 3: Question, Option, & Answer Key Detection                      │
+│ • Detects stems, numbered options (A-D), instructions, marks, equations │
+│ • Validates question completeness (flags missing stems or options)     │
+│ • Preserves distinct questions across sections (Section A vs B Q1)    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Checkpoint saved
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 4: Source References & Extraction Warnings                       │
+│ • Aggregates page-level warnings for incomplete questions              │
+│ • Flags missing answer keys and low-confidence extractions             │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Checkpoint saved
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 5: Content Map & Gap Analysis                                    │
+│ • Calculates estimated syllabus coverage percentage                    │
+│ • Highlights uncovered prerequisite knowledge and topic gaps           │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Checkpoint saved
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Stage 6: Schema Validation & Checkpointed Report Persistence           │
+│ • Complete `MaterialIntelligenceReport` validated against Zod schema   │
+│ • Versioned record stored in `material_analyses` with RLS isolation    │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Provider Abstraction (`lib/ai/provider.ts`)**:
+   - `AIProvider` interface decoupled from specific LLM models.
+   - Official `GoogleGenAI` SDK (`@google/genai`) implementation targeting Gemini 2.5 Flash with structured JSON output mode.
+   - Server-side timeouts (30s default) with exponential backoff retry.
+   - Deterministic `MockAIProvider` for test suites and offline development.
+2. **Untrusted Evidence Framing (`lib/ai/prompt-safety.ts`)**:
+   - Extracted text is framed inside XML-delimited `<document_evidence>` blocks.
+   - Delimiter tags in student documents are systematically escaped (`</document_evidence>` -> `&lt;/document_evidence&gt;`) to prevent prompt breakout.
+   - Heuristic injection scanner detects jailbreak patterns, system prompt overrides, and credential probing.
+3. **Resumability & Checkpointing**:
+   - Intermediate outputs are serialized to `stage_checkpoints` JSONB column in `material_analyses`.
+   - Failed or interrupted jobs can resume directly from their latest valid stage checkpoint without re-running upstream LLM calls.
+4. **Candidate Feedback Loop (`material_corrections`)**:
+   - Candidates can edit inferred classification metadata (e.g. correct subject or educational level).
+   - Candidates can flag extraction mistakes on individual questions or options, creating versioned audit records for continuous model evaluation.

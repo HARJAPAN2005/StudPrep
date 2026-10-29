@@ -34,3 +34,4 @@ export const INGESTION_CONFIG = {
   /** Allowed MIME types */
   ALLOWED_MIME_TYPES: ["application/pdf"] as const,
 } as const;
+

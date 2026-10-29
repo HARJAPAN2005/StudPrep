@@ -76,16 +76,23 @@ CREATE VIEW questions_public AS
   FROM questions;
 ```
 
-### 4. Document & AI Input Safety
+### 4. Document & AI Input Safety (Phase 5 Defense-in-Depth)
 
-- Uploaded files are stored in **Supabase Storage** with a private bucket.
-- **No public bucket URLs** exist. All access is via short-lived signed URLs.
-- Extracted text from uploaded documents is treated as **untrusted user data**, not instructions.
-- The AI prompt is structured so that document content is placed in a clearly delimited `<document_text>` block with an explicit system instruction to treat it as data only.
-- Prompt injection mitigations:
-  - Maximum text length truncated before prompt construction
-  - Document content is never interpolated into the system prompt role
-  - AI output is Zod-validated; any output not matching the schema is rejected
+Uploaded documents and extracted text are treated as **untrusted user input**, never as executable instructions or trusted system directives.
+
+1. **Delimiter Escaping Against Prompt Breakout (`lib/ai/prompt-safety.ts`)**:
+   - The platform frames student text strictly within `<document_evidence>` and `<page_evidence>` tags.
+   - Any occurrences of delimiter tags within student documents (e.g. `</document_evidence>`, `<system_instruction>`, `</instructions>`) are escaped into XML entities (`&lt;/document_evidence&gt;`). This makes prompt breakout syntactically impossible for the LLM tokenizer.
+2. **Heuristic Prompt-Injection Detection (`inspectForPromptInjection`)**:
+   - Proactively inspects incoming document text for jailbreak phrases, role-play manipulation (e.g., "ignore all previous instructions", "you are now DAN"), and sensitive configuration probes (e.g. "print your system prompt", "reveal GEMINI_API_KEY").
+   - Suspicious inputs trigger extraction warnings or fail-closed pipeline rejection (`AIPromptInjectionDetectedError`).
+3. **Structured Response Contracts & Rejection (`lib/ai/schemas.ts`)**:
+   - Model responses are never evaluated dynamically or accepted as unstructured markdown.
+   - Every stage output is validated with strict Zod contracts. If a model hallucinates extra fields, omits required parameters, or returns invalid types, `AISchemaValidationError` is thrown and the call is retried or failed closed.
+4. **Server-Side Key Isolation**:
+   - `GEMINI_API_KEY` is loaded exclusively in server runtime contexts (`lib/ai/provider.ts`). It is never bundled into client-side JavaScript or rendered in HTML attributes.
+5. **Database RLS on Analyses & Corrections**:
+   - `material_analyses` and `material_corrections` enforce PostgreSQL RLS policies where `uploader_id = auth.uid()` / `user_id = auth.uid()`. Students cannot read or alter analyses belonging to other candidates.
 
 ### 5. API Route Security
 

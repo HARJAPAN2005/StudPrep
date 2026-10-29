@@ -4,47 +4,28 @@
 
 ---
 
-## 🚀 Key Features (Phases 1 & 2 Completed)
+## 🚀 Key Features (Phases 1 - 5 Completed)
 
-1. **Academic-Tech Visual Identity**:
-   - Clean, professional design system with high-contrast slate palettes, indigo primary accents, and emerald/amber indicators.
-   - Fully responsive layouts across Mobile (375px), Tablet (768px), and Desktop (1280px+).
-   - Fluid typography with Geist and Geist Mono.
-
-2. **Distraction-Free CBT Exam Runner** (`/exam/[id]`):
-   - Fully decoupled from the main dashboard shell to eliminate navigation distraction.
-   - Interactive live countdown timer with urgency threshold alerting.
-   - 4-option single-select response matrix with keyboard-accessible triggers.
-   - Question review palette showing answered, unanswered, and flagged questions.
-   - Auto-submit on timer expiry and double-confirmation submission dialog.
-
-3. **CBT Scoring & Results Report** (`/exam/[id]/results`):
-   - Visual score percentage gauge and percentile tier benchmark.
-   - Pacing metrics (seconds per MCQ) and total time expended.
-   - Question-by-question review with pedagogical rationales and correct answer keys.
-   - Strict security: Correct answer keys and model rationales are never delivered to the client prior to exam submission.
-
-4. **Student Diagnostic Dashboard** (`/dashboard`):
-   - Readiness score gauge with past 30 days score trajectory SVG chart.
-   - Subject-level accuracy breakdown across Mathematics, English, Physics, and Chemistry.
-   - Quick launch for active study materials and recent mock sessions.
-
-5. **Study Material Library & Analysis** (`/dashboard/materials`, `/dashboard/materials/[id]`):
-   - Drag-and-drop file upload dropzone supporting PDF, DOCX, and TXT (client-side validation for type and 20MB size limits).
-   - Status tracking (`Ready`, `Analyzing`, `Draft`).
-   - Deep-dive document analysis view showing syllabus coverage, extracted key topics, and difficulty distribution (Easy / Medium / Hard).
-
-6. **Step-Based Exam Builder Wizard** (`/dashboard/exams/builder`):
-   - Step 1: Select Subjects & Uploaded Reference Materials.
-   - Step 2: Configure Question Count & Difficulty Weighting.
-   - Step 3: Configure Time Limits & Exam Engine Modes (Strict Timed CBT vs Practice Mode).
-   - Step 4: Review Configuration & Launch Runner.
-
-7. **Security Architecture & Infrastructure**:
-   - Strict runtime environment variable validation using Zod (`lib/env.ts`).
-   - Next.js 16 Proxy layer (`proxy.ts`) enforcing authenticated route boundaries.
-   - Typed PostgREST database contracts (`types/supabase.ts`).
-   - Mock data isolated strictly behind typed interfaces (`lib/fixtures/mock-data.ts`).
+1. **AI Document Intelligence Pipeline (Phase 5)**:
+   - Bounded 6-stage analysis: Curriculum Classification, Topic Hierarchy with Citations, Question & Option Detection, Warnings & Answer Key Checks, Content Map & Gaps, Schema-Validated Checkpoint Persistence.
+   - Long document chunking with overlap & source-preserving merging without question loss.
+   - Prompt-injection defense: XML entity delimiter escaping and pattern scanner.
+   - Material analysis workspace (`/dashboard/materials/[id]`) with candidate metadata correction and mistake flagging.
+2. **Secure Document Ingestion (Phase 4)**:
+   - PDF upload workflow with `%PDF-` magic-byte validation, 20MB limit, and private Supabase Storage isolation (`materials/{user_id}/{uuid}.pdf`).
+   - Background processing queue with state machine (`queued` -> `processing` -> `completed` / `retryable` / `failed`).
+   - Page-by-page text extraction via `unpdf`, low-text density detection, and OCR fallback interface.
+3. **Backend & Security Foundation (Phase 3)**:
+   - Supabase Auth integration with HTTP-only cookies, protected edge routes, and session restoration.
+   - Version-controlled PostgreSQL migrations with strict RLS policies on all tables.
+   - Isolated admin-role authorization model with DB triggers preventing self-privilege elevation.
+4. **Academic-Tech Visual Identity (Phase 2)**:
+   - High-contrast slate and indigo UI, responsive across mobile, tablet, and desktop.
+   - Accessible primitives: dialogs, dropzones, skeletons, toasts, and score gauges.
+5. **Architecture & Scaffolding (Phase 1)**:
+   - Next.js 16 App Router, TypeScript 5, Tailwind CSS v4, Vitest with 164 automated tests.
+   - Distraction-free CBT exam runner (`/exam/[id]`) decoupled from navigation.
+   - Exam answer keys protected server-side and never sent to clients prior to submission.
 
 ---
 

@@ -145,3 +145,4 @@ CREATE POLICY "document_processing_jobs: users can delete own"
   ON public.document_processing_jobs
   FOR DELETE
   USING (auth.uid() = uploader_id);
+

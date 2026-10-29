@@ -335,6 +335,89 @@ export interface Database {
         };
         Relationships: NoRelationships;
       };
+      material_analyses: {
+        Row: {
+          id: string;
+          document_id: string;
+          uploader_id: string;
+          version: number;
+          status: "pending" | "classifying" | "extracting_topics" | "detecting_questions" | "mapping_content" | "completed" | "failed";
+          current_stage: number;
+          classification: Json;
+          topics_hierarchy: Json;
+          extracted_questions: Json;
+          content_map: Json;
+          extraction_warnings: string[];
+          stage_checkpoints: Json;
+          error_message: string | null;
+          token_usage: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          uploader_id: string;
+          version?: number;
+          status?: "pending" | "classifying" | "extracting_topics" | "detecting_questions" | "mapping_content" | "completed" | "failed";
+          current_stage?: number;
+          classification?: Json;
+          topics_hierarchy?: Json;
+          extracted_questions?: Json;
+          content_map?: Json;
+          extraction_warnings?: string[];
+          stage_checkpoints?: Json;
+          error_message?: string | null;
+          token_usage?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: "pending" | "classifying" | "extracting_topics" | "detecting_questions" | "mapping_content" | "completed" | "failed";
+          current_stage?: number;
+          classification?: Json;
+          topics_hierarchy?: Json;
+          extracted_questions?: Json;
+          content_map?: Json;
+          extraction_warnings?: string[];
+          stage_checkpoints?: Json;
+          error_message?: string | null;
+          token_usage?: Json;
+          updated_at?: string;
+        };
+        Relationships: NoRelationships;
+      };
+      material_corrections: {
+        Row: {
+          id: string;
+          analysis_id: string;
+          document_id: string;
+          user_id: string;
+          field: string;
+          original_value: Json;
+          corrected_value: Json;
+          flag_reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          analysis_id: string;
+          document_id: string;
+          user_id: string;
+          field: string;
+          original_value: Json;
+          corrected_value: Json;
+          flag_reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          field?: string;
+          original_value?: Json;
+          corrected_value?: Json;
+          flag_reason?: string | null;
+        };
+        Relationships: NoRelationships;
+      };
     };
     Views: {
       questions_public: {
@@ -354,6 +437,7 @@ export interface Database {
       user_role: "student" | "admin";
       document_status: "pending" | "processing" | "ready" | "failed";
       processing_job_status: "queued" | "processing" | "completed" | "failed" | "retryable";
+      analysis_stage_status: "pending" | "classifying" | "extracting_topics" | "detecting_questions" | "mapping_content" | "completed" | "failed";
       question_difficulty: "easy" | "medium" | "hard";
       exam_status: "active" | "submitted" | "expired";
     };

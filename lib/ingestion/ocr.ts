@@ -68,3 +68,4 @@ export function getOcrProvider(): OcrProvider {
 export function registerOcrProvider(provider: OcrProvider): void {
   activeOcrProvider = provider;
 }
+

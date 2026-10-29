@@ -95,15 +95,20 @@ Manage Question Bank (edit, delete, adjust difficulty)
 | Subject listing | All authenticated users. Shows document count and question count. |
 | Subject deletion | Admin only. Soft-delete (archived flag). |
 
-### 4.3 Document Upload & Processing
+### 4.3 Document Upload & AI Intelligence Analysis
 
 | Feature | Spec |
 |---|---|
-| Upload | PDF or DOCX up to 20 MB |
-| Storage | Private Supabase Storage bucket |
-| Processing states | pending → processing → ready / failed |
-| AI generation | Up to 50 questions per document (configurable) |
-| Status updates | Real-time via Supabase channel |
+| Upload formats | PDF up to 20 MB with magic-byte binary header verification |
+| Storage | Private Supabase Storage bucket (`materials/{userId}/{uuid}.pdf`) |
+| Ingestion pipeline | `queued` → `processing` → `completed` / `retryable` / `failed` |
+| Text extraction | Page-level text extraction with low-text density detection and OCR fallback interface |
+| AI Classification | Infers subject, educational level, examination board (JAMB, WAEC, NECO, ICAN), and confidence |
+| Topic Hierarchy | Multi-level topic and subtopic extraction with verbatim evidence citations and page references |
+| Question Detection | Scans for original exam questions, options (A-D), marks, equations, answer keys, and completeness |
+| Warnings & Gaps | Highlights incomplete questions, missing keys, and estimated syllabus coverage % |
+| Resumability | Checkpoints saved per stage; retries resume without repeating upstream LLM stages |
+| Candidate Feedback | Students can correct inferred metadata and flag extraction mistakes |
 
 ### 4.4 Question Bank
 

@@ -1,21 +1,28 @@
-# Product Specification — StudPrep
+# Product Specification — StudPilot
 
-> Version 0.1 · Last updated: 2026-10-29
+> Version 1.0 · Last updated: October 2026
 
 ---
 
 ## 1. Problem Statement
 
-Students preparing for competitive examinations (JAMB, WAEC, NECO, ICAN, etc.) lack an affordable, personalised CBT practice environment that adapts to their study materials. Existing platforms use generic question banks that don't reflect an individual student's reading materials or weak areas.
+Students preparing for high-stakes standardized and professional examinations in West Africa (such as JAMB UTME, WAEC WASSCE, NECO SSCE, and ICAN) face three critical bottlenecks:
+1. **Generic, Static Question Banks**: Existing platforms cycle through decades-old past questions with no contextual alignment to the candidate's active reading syllabus or course notes.
+2. **Poor CBT Exam Simulation**: Practice tests often do not match the cognitive pressure, pacing constraints, or navigation paradigms of actual computer-based testing centers.
+3. **Absence of Actionable Diagnostics**: Students receive only a percentage score rather than detailed pacing analysis, syllabus topic weaknesses, and pedagogical answer explanations.
+
+StudPilot solves this by allowing students to upload textbooks, lecture slides, and notes, and automatically synthesizing them into timed, high-fidelity CBT exam simulations with instant diagnostic reporting.
 
 ---
 
-## 2. Target Users
+## 2. Target Examination Boards & Personas
 
-| Persona | Description |
-|---|---|
-| **Student** | SS3/Year 12 student, university student, or professional preparing for a certification exam. Primary user. |
-| **Admin** | Exam tutor or platform operator who curates subjects, uploads materials, and reviews AI-generated questions. |
+| Exam Board | Candidate Persona | Target Format |
+|---|---|---|
+| **JAMB UTME** | University matriculation candidate | 4 subjects, 40-60 MCQs per subject, strict 120-minute timer |
+| **WAEC WASSCE** | Senior Secondary School terminal candidate | Objective papers (Paper 1), syllabus-focused MCQs |
+| **NECO SSCE** | Senior Secondary School certificate candidate | Objective papers, curriculum-aligned questions |
+| **ICAN** | Accounting professional trainee | Foundation & skills level objective and case-based MCQs |
 
 ---
 

@@ -1,14 +1,14 @@
-# Security — StudPrep
+# Security — StudPilot
 
-> Last updated: 2026-10-29
+> Last updated: October 2026
 
 ## Threat Model
 
-StudPrep handles:
-- Student PII (email, name, exam scores)
-- Uploaded study documents (potentially proprietary)
-- Examination answer keys (must not leak before submission)
-- Payments (future phase — not in scope yet)
+StudPilot handles:
+- Candidate PII (email, name, examination preferences, exam performance metrics)
+- Uploaded study documents & syllabus materials (PDF, DOCX, TXT)
+- Examination answer keys & rationales (must never be exposed to clients prior to submission)
+- AI generation prompts (must be guarded against prompt injection from untrusted input)
 
 ---
 
@@ -16,20 +16,21 @@ StudPrep handles:
 
 ### 1. Authentication & Sessions
 
-- **Supabase Auth** manages all authentication. We never handle raw passwords.
-- Sessions are stored in **HTTP-only cookies** via `@supabase/ssr`. JavaScript cannot access them.
-- Session cookies are `Secure` (HTTPS only) and `SameSite=Lax`.
-- Password reset flows use time-limited, single-use tokens from Supabase Auth.
-- OAuth flows use PKCE to prevent code interception.
+- **Supabase Auth** manages all user authentication. Raw passwords are never handled directly.
+- Sessions are stored in **HTTP-only cookies** via `@supabase/ssr`. Client JavaScript cannot access them.
+- Session cookies are configured with `Secure` (HTTPS only) and `SameSite=Lax`.
+- Password reset flows use time-limited, single-use tokens managed by Supabase Auth.
+- OAuth flows use PKCE (Proof Key for Code Exchange) to prevent code interception.
 
-### 2. Authorisation & Row Level Security
+### 2. Authorization & Edge Route Protection
 
-- **Every table has RLS enabled**. There are no public tables.
-- The service-role (admin) client that bypasses RLS is **imported only in server-only files** (`lib/supabase/admin.ts`) and is never tree-shaken into the browser bundle.
-- `middleware.ts` enforces route-level access control:
-  - `/dashboard/*` — requires authenticated session
-  - `/admin/*` — requires `role = 'admin'` in the `profiles` table
-  - `/exam/*` — requires authenticated session
+- **Every database table has RLS enabled**. There are no unprotected public tables.
+- The service-role (admin) client that bypasses RLS is restricted strictly to server-only files (`lib/supabase/admin.ts`) and is never included in client bundles.
+- Next.js 16 Edge Proxy (`proxy.ts`) enforces strict route-level access control:
+  - `/dashboard/*` — requires an authenticated session
+  - `/admin/*` — requires authenticated session with staff/admin role in the `profiles` table
+  - `/exam/*` — requires an authenticated session
+  - `/login`, `/register`, `/sign-in`, `/sign-up` — automatically redirects authenticated users to `/dashboard`
 
 ### 3. Answer Key Protection
 

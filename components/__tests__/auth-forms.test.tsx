@@ -54,3 +54,4 @@ describe("ForgotPasswordForm", () => {
     ).toBeInTheDocument();
   });
 });
+

@@ -1,6 +1,6 @@
-# Deployment — StudPrep
+# Deployment — StudPilot
 
-> Last updated: 2026-10-29
+> Last updated: October 2026
 
 ---
 
@@ -8,12 +8,12 @@
 
 | Component | Service |
 |---|---|
-| Frontend + API | Vercel (Next.js) |
-| Database | Supabase Cloud (PostgreSQL) |
-| Auth | Supabase Auth |
-| Storage | Supabase Storage |
-| AI | Google AI Studio / Vertex AI (Gemini) |
-| CI/CD | GitHub Actions |
+| Frontend + App Router | Vercel (Next.js 16 with Turbopack & PPR) |
+| Database | Supabase Cloud (PostgreSQL with RLS) |
+| Auth | Supabase Auth (PKCE & HTTP-only cookies) |
+| Storage | Supabase Storage (Private bucket `user-materials`) |
+| AI Pipeline | Google Gemini API (Server-side schema validated) |
+| Testing & CI/CD | Vitest, GitHub Actions |
 
 ---
 
@@ -23,19 +23,19 @@
 
 | Variable | Description | Client-side? |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | ✅ Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key | ✅ Yes |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | ✅ Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anonymous API key | ✅ Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (bypasses RLS) | ❌ Server only |
 | `GEMINI_API_KEY` | Google Gemini API key | ❌ Server only |
-| `NEXT_PUBLIC_APP_URL` | Full URL of the deployed app | ✅ Yes |
+| `NEXT_PUBLIC_APP_URL` | Root URL of the deployed application | ✅ Yes |
 
 > ⚠️ **NEVER** prefix `SUPABASE_SERVICE_ROLE_KEY` or `GEMINI_API_KEY` with `NEXT_PUBLIC_`. This would expose them in the browser bundle.
 
 ### Setting up `.env.local`
 
 ```bash
-cp .env.local.example .env.local
-# Fill in actual values
+cp .env.example .env.local
+# Fill in actual project credentials
 ```
 
 ---

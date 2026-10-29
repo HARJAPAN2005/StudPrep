@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Manage your StudPrep profile.",
 };
 
+export const instant = false;
+
 /**
  * Profile page — Server Component.
  * Fetches the user's profile and passes it to the client ProfileForm.

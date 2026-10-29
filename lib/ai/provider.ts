@@ -238,6 +238,24 @@ export class MockAIProvider implements AIProvider {
         },
       ],
       detectedAnswerKeySections: [{ pageNumber: 1, notes: "Solutions given on page footer" }],
+      questions: [
+        {
+          body: "If 2x² - 5x + 3 = 0, find the values of x.",
+          type: "single_choice",
+          options: [
+            { label: "A", text: "x = 1 or x = 3/2", explanation: "Factorizing gives (2x - 3)(x - 1) = 0" },
+            { label: "B", text: "x = -1 or x = 3/2", explanation: "Sign error on x = 1 root" },
+            { label: "C", text: "x = 2 or x = 3", explanation: "Incorrect factoring coefficients" },
+            { label: "D", text: "x = 0 or x = 5", explanation: "Arbitrary substitution values" },
+          ],
+          correctLabel: "A",
+          explanation: "Factorizing 2x² - 5x + 3 = 0 gives (2x - 3)(x - 1) = 0, hence x = 3/2 or x = 1.",
+          difficulty: "medium",
+          topic: "Algebraic Processes",
+          evidenceCitation: "Quadratic equations solved using formula x = (-b ± √(b² - 4ac)) / 2a",
+          pageNumber: 1,
+        },
+      ],
       warnings: [],
       totalTopics: 1,
       coveragePercentage: 92,
@@ -245,6 +263,23 @@ export class MockAIProvider implements AIProvider {
       identifiedGaps: ["Calculus foundations not covered"],
       recommendedPrerequisites: ["Basic Arithmetic", "Linear Equations"],
     };
+
+    // If requested question count in batch prompt is > 1, multiply mock questions to match
+    const synthMatch = params.prompt.match(/Synthesize (\d+)/);
+    if (synthMatch) {
+      const requestedCount = parseInt(synthMatch[1], 10);
+      const baseQuestions = (mockData as Record<string, unknown>).questions as Array<Record<string, unknown>>;
+      if (baseQuestions && baseQuestions.length > 0 && requestedCount > 1) {
+        const generatedList: Array<Record<string, unknown>> = [];
+        for (let i = 0; i < requestedCount; i++) {
+          generatedList.push({
+            ...baseQuestions[0],
+            body: `${baseQuestions[0].body} (Item ${i + 1})`,
+          });
+        }
+        (mockData as Record<string, unknown>).questions = generatedList;
+      }
+    }
 
     // Check if prompt specifically targets a stage
     const parsed = params.schema.safeParse(mockData);

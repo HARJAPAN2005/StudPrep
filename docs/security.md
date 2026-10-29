@@ -59,22 +59,27 @@ Study materials uploaded by candidates are stored in the private `materials` Sup
 - `verifyExamSessionAccess(supabase, sessionId, currentUserId, isAdmin)`: Confirms exam session ownership.
 - `verifyStoragePathAccess(storagePath, currentUserId, isAdmin)`: Validates user namespace prefix and blocks traversal.
 
-### 6. Answer Key Protection
+### 6. Answer Key Protection & Exam Engine Integrity (Phases 6 & 7)
 
-This is the most critical security control for a CBT platform.
+Answer key confidentiality and exam session immutability are the highest security priorities of the CBT platform.
 
-- The `questions` table contains a `correct_index` column and an `explanation` column.
-- A database **view** called `questions_public` selects all columns **except** `correct_index` and `explanation`.
-- RLS on `questions` grants students SELECT only through `questions_public`, never the base table.
-- `correct_index` is only read server-side (service-role client) during session scoring.
-- Results including explanations are returned only **after** `exam_sessions.submitted_at` is set.
-
-```sql
--- The view students query
-CREATE VIEW questions_public AS
-  SELECT id, subject_id, body, options, difficulty, source_page
-  FROM questions;
-```
+1. **Zero Client Leakage During Active Tests**:
+   - `exam_snapshots` records contain the complete question bank (with `correctOptionId`, worked explanations, and option rationales) in PostgreSQL.
+   - When an attempt is active, `getAttemptStateAction` runs `sanitizeQuestionForAttempt`, which explicitly strips `correctOptionId`, worked explanations, and option-level explanations.
+   - At no point during an active exam are correct answers or rationales present in browser memory, React state, network responses, or client DOM.
+2. **Snapshot Immutability**:
+   - Once a student starts an attempt, it references an immutable versioned snapshot in `exam_snapshots`.
+   - Modifying or deleting questions in an exam template cannot alter the question bank, option order, or marking scheme of an already-started attempt.
+3. **Server-Authoritative Deadlines**:
+   - Exam deadlines (`expires_at`) are calculated and validated server-side.
+   - The browser timer is strictly a display convenience.
+   - Every autosave operation (`autosaveAnswerAction`) checks `now > expires_at`. If the deadline has expired, the answer change is rejected and the attempt is automatically finalized.
+   - Late client requests cannot alter test responses after the deadline has passed.
+4. **Idempotent Submission & Anti-Tampering**:
+   - `submitExamAttemptAction` is strictly idempotent. If invoked multiple times concurrently or on reload, it returns the recorded score and prevents duplicate evaluation.
+   - Once `status` becomes `submitted` or `expired`, answer changes are rejected.
+5. **Fixed Ordering Per Attempt**:
+   - Random question order and option mappings are calculated once at attempt creation and persisted in `question_order` and `option_orders`. This prevents option-order shifting or tampering via browser refresh.
 
 ### 4. Document & AI Input Safety (Phase 5 Defense-in-Depth)
 

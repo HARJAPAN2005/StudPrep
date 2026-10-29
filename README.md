@@ -4,26 +4,40 @@
 
 ---
 
-## 🚀 Key Features (Phases 1 - 5 Completed)
+## 🚀 Key Features (Phases 1 - 7 Completed)
 
-1. **AI Document Intelligence Pipeline (Phase 5)**:
+1. **Examination Engine & CBT Runner (Phase 7)**:
+   - Distraction-free dark workstation (`/exam/[id]`) with live countdown timer and optional fullscreen mode.
+   - Pre-exam instructions modal with explicit testing rules and negative marking disclosures.
+   - Server-authoritative deadlines with automatic timeout finalization.
+   - Debounced autosave engine with status feedback (`Saving...`, `All answers saved`, `Offline`).
+   - Question palette tracking Answered, Unanswered, Marked for Review, and Visited states.
+   - Keyboard support (numeric 1-4 and letters A-D) with full accessibility.
+   - Idempotent submission, negative marking penalties, and detailed post-exam worked solutions review (`/exam/[id]/results`).
+2. **Exam Configuration Studio & Immutable Snapshots (Phase 6)**:
+   - 3 creation modes: Recreate Source Paper (uses original questions detected in Phase 5), Generate Practice Exam (source-grounded AI synthesis), and Mixed Exam (50/50 hybrid).
+   - In-studio question editor: preview, edit stem/options, regenerate individual questions, delete, and reorder.
+   - Integrity verification: duplicate detection, option consistency, answer key presence, manual review flags.
+   - Published immutable snapshot (`exam_snapshots`) completely decoupling active attempts from template edits.
+   - Answer keys and worked solutions strictly stripped from active exam payloads.
+3. **AI Document Intelligence Pipeline (Phase 5)**:
    - Bounded 6-stage analysis: Curriculum Classification, Topic Hierarchy with Citations, Question & Option Detection, Warnings & Answer Key Checks, Content Map & Gaps, Schema-Validated Checkpoint Persistence.
    - Long document chunking with overlap & source-preserving merging without question loss.
    - Prompt-injection defense: XML entity delimiter escaping and pattern scanner.
    - Material analysis workspace (`/dashboard/materials/[id]`) with candidate metadata correction and mistake flagging.
-2. **Secure Document Ingestion (Phase 4)**:
+4. **Secure Document Ingestion (Phase 4)**:
    - PDF upload workflow with `%PDF-` magic-byte validation, 20MB limit, and private Supabase Storage isolation (`materials/{user_id}/{uuid}.pdf`).
    - Background processing queue with state machine (`queued` -> `processing` -> `completed` / `retryable` / `failed`).
    - Page-by-page text extraction via `unpdf`, low-text density detection, and OCR fallback interface.
-3. **Backend & Security Foundation (Phase 3)**:
+5. **Backend & Security Foundation (Phase 3)**:
    - Supabase Auth integration with HTTP-only cookies, protected edge routes, and session restoration.
    - Version-controlled PostgreSQL migrations with strict RLS policies on all tables.
    - Isolated admin-role authorization model with DB triggers preventing self-privilege elevation.
-4. **Academic-Tech Visual Identity (Phase 2)**:
+6. **Academic-Tech Visual Identity (Phase 2)**:
    - High-contrast slate and indigo UI, responsive across mobile, tablet, and desktop.
    - Accessible primitives: dialogs, dropzones, skeletons, toasts, and score gauges.
-5. **Architecture & Scaffolding (Phase 1)**:
-   - Next.js 16 App Router, TypeScript 5, Tailwind CSS v4, Vitest with 164 automated tests.
+7. **Architecture & Scaffolding (Phase 1)**:
+   - Next.js 16 App Router, TypeScript 5, Tailwind CSS v4, Vitest with 180 automated tests.
    - Distraction-free CBT exam runner (`/exam/[id]`) decoupled from navigation.
    - Exam answer keys protected server-side and never sent to clients prior to submission.
 

@@ -1,10 +1,10 @@
-# Architecture — StudPilot
+# Architecture — StudPrep
 
 > Last updated: October 2026
 
 ## 1. System Overview
 
-StudPilot is an AI-powered Computer-Based Testing (CBT) and diagnostic preparation platform built with **Next.js 16 App Router**, **TypeScript**, **Tailwind CSS**, **Supabase**, and schema-validated AI question generation.
+StudPrep is an AI-powered Computer-Based Testing (CBT) and diagnostic preparation platform built with **Next.js 16 App Router**, **TypeScript**, **Tailwind CSS**, **Supabase**, and schema-validated AI question generation.
 
 The platform architecture is divided into distinct execution domains:
 
@@ -94,12 +94,37 @@ lib/
 
 ## 3. Data Flow & Security Boundaries
 
-### 3.1 Exam Session Lifecycle
-1. **Creation**: Student configures exam parameters in `/dashboard/exams/builder`. A session record is created in `exam_sessions`.
-2. **Execution**: Student navigates to `/exam/[id]`. Questions are rendered **without** answer keys or rationales (`correct_option` and `explanation` are omitted from the client payload).
-3. **Submission**: When the student clicks submit or the timer expires, client answers are sent to the server for evaluation.
-4. **Scoring**: Server-side grading evaluates candidate choices against the secure answer key in PostgreSQL, writes the result to `exam_submissions`, and redirects the candidate to `/exam/[id]/results`.
-5. **Review**: The results page displays the verified score, pacing metrics, and pedagogical rationales.
+### 3.1 Exam Session Lifecycle & Examination Engine (Phases 6 & 7)
+
+1. **Studio Configuration (`/dashboard/exams/builder`)**:
+   - Candidate selects one of three creation modes:
+     - **Recreate Source Paper**: Pulls verified questions detected from uploaded past papers in Phase 5, preserving original numbering, stems, options, and tables.
+     - **Generate Practice Exam**: Synthesizes fresh, source-grounded questions via Gemini AI.
+     - **Mixed Exam**: Blends original past questions (e.g. 50%) and synthetic diagnostic items (50%).
+   - Candidate customizes question counts, time limits, difficulty distribution, question types (`single_choice`, `true_false`), marks per question, and negative marking penalty (e.g. -0.25).
+   - Conflict detection warns when requested question count exceeds available questions in source materials.
+2. **Interactive Question Editing & Integrity Verification**:
+   - Preview questions with visual indicators for difficulty, source citations, and review status.
+   - Verification engine detects duplicate questions, option label/text collisions, and missing answer keys. Questions lacking verified answer keys are flagged for manual review (`reviewStatus: "flagged_review"`) — answer keys are never silently invented.
+   - Candidates can edit stems/options, regenerate single questions with AI, reorder, or delete questions.
+3. **Immutable Snapshot Publication (`exam_snapshots`)**:
+   - On starting the exam, an immutable, versioned snapshot is published to PostgreSQL.
+   - Subsequent edits to the reusable exam configuration cannot alter active attempts.
+   - Answer keys and worked explanations are stored in protected server-side records and stripped from active attempt payloads via `sanitizeQuestionForAttempt`.
+4. **Active Attempt Execution (`/exam/[id]`)**:
+   - Pre-exam instructions modal presents testing rules, negative marking policies, and fullscreen toggle.
+   - Server-authoritative deadline: `expires_at` is enforced by the database and server actions. The client timer is for display only.
+   - Fixed ordering: Question and option order is randomized once and persisted in `exam_attempts` (`question_order` and `option_orders`), ensuring reload/refresh resilience.
+   - Debounced autosaving: Answer selections are debounced (500ms) and saved via `autosaveAnswerAction` with visible status indicators (`Saving...`, `All answers saved`, `Offline - saved locally`).
+   - Question palette tracks `answered`, `unanswered`, `flagged_review`, and `visited` states.
+   - Keyboard navigation supports numeric (1-4) or alphabetical (A-D) option selection.
+5. **Idempotent Submission & Negative Marking Scoring**:
+   - Review-before-submit modal displays answered/unanswered counts before final submission.
+   - Automatic timeout finalization: if the server deadline passes, the attempt is finalized automatically.
+   - Grading evaluates candidate answers against snapshot answer keys, deducting negative marking penalties (e.g., `marks - negative_marking`, clamped to 0 minimum).
+   - Finalization is strictly idempotent; repeat submit requests return the recorded score without race conditions.
+6. **Solution & Diagnostic Review (`/exam/[id]/results`)**:
+   - The results screen unlocks full worked solutions, option rationales, pacing metrics (seconds/MCQ), and percentile tier benchmarks.
 
 ### 3.2 Document Processing & Ingestion Pipeline
 1. **Upload & Pre-Validation**: Candidate selects a PDF file. Client-side checks enforce the 20MB limit and PDF format.

@@ -110,36 +110,40 @@ Manage Question Bank (edit, delete, adjust difficulty)
 | Resumability | Checkpoints saved per stage; retries resume without repeating upstream LLM stages |
 | Candidate Feedback | Students can correct inferred metadata and flag extraction mistakes |
 
-### 4.4 Question Bank
+### 4.4 Exam Configuration Studio (Phase 6)
 
 | Feature | Spec |
 |---|---|
-| Question format | 4-option MCQ |
-| Fields | body, options[4], correct_index, explanation, difficulty, subject_id, source_page |
-| Difficulties | easy, medium, hard |
-| Admin review | Admin can edit any field, delete questions |
-| Bulk actions | Select + delete multiple questions |
+| Creation Modes | Recreate Source Paper, Generate Practice Exam, Mixed Exam (50/50 hybrid) |
+| Question Count | 5 to 100 questions with source availability validation |
+| Question Types | Single-choice MCQ (A-D) and True/False |
+| Marking Scheme | Configurable positive marks (0.5 to 10) and negative marks (-0.25 to -1.0) |
+| Difficulty Tuning | Easy / Medium / Hard percentage distribution |
+| Studio Editing | In-studio preview, edit stem/options, regenerate single question, delete, reorder |
+| Integrity Checks | Duplicate detection, option consistency, answer key presence, manual review flags |
+| Immutability | Published immutable snapshot (`exam_snapshots`) before attempt execution |
 
-### 4.5 CBT Exam Session
-
-| Feature | Spec |
-|---|---|
-| Session creation | Student picks subject, count (10/20/40), time limit |
-| Time limit | Configurable per exam. Default: 2 min/question. Countdown displayed. |
-| Question display | One at a time. Navigator panel shows all, flagged, and answered. |
-| Flagging | Student can flag a question for review |
-| Auto-submit | Session auto-submits when timer reaches zero |
-| Anti-key-leak | `correct_index` NEVER sent to client during active session |
-| Submission | Student can submit early. Confirmation dialog shown. |
-
-### 4.6 Results & Explanations
+### 4.5 CBT Examination Runner (Phase 7)
 
 | Feature | Spec |
 |---|---|
-| Score | Percentage + raw count (correct / total) |
-| Per-question review | For each question: student answer, correct answer, explanation |
-| Time analytics | Time spent per question |
-| Retry | Button to start a new session for the same subject |
+| Workstation Shell | Distraction-free workstation, dark palette (slate-950), optional fullscreen mode |
+| Instructions | Pre-exam testing rules, duration, negative marking warning, start confirmation |
+| Question Palette | Color-coded status: Answered (emerald), Unanswered (slate), Review (amber), Current (indigo) |
+| Keyboard Support | Numeric keys (1-4) or letters (A-D) for options; Arrow keys for navigation |
+| Autosave Engine | Debounced (500ms) with save status badge (`Saving...`, `All answers saved`, `Offline`) |
+| Deadline Control | Server-authoritative deadline (`expires_at`), auto-finalization on timeout |
+| Anti-Key-Leak | Server strips `correctOptionId` and worked explanations from active attempt responses |
+| Submission Safety | Confirmation dialog with unanswered breakdown; idempotent finalization |
+
+### 4.6 Results & Worked Explanations
+
+| Feature | Spec |
+|---|---|
+| Scoring & Marks | Percentage, earned marks vs max marks, negative marking deductions |
+| Diagnostics | Correct count, incorrect count, unanswered count, pacing (seconds / MCQ) |
+| Solution Review | Complete worked solutions, distractor explanations, source page citations |
+| Next Actions | Retake test or return to Student Dashboard |
 
 ### 4.7 Analytics Dashboard
 

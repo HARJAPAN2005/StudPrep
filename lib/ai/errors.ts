@@ -86,3 +86,4 @@ export class AIPromptInjectionDetectedError extends AIError {
     this.detectedPattern = pattern;
   }
 }
+

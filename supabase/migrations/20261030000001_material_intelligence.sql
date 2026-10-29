@@ -146,3 +146,4 @@ CREATE POLICY "material_corrections: users insert own"
     auth.uid() = user_id AND
     auth.role() = 'authenticated'
   );
+

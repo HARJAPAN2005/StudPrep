@@ -667,6 +667,62 @@ export interface Database {
         };
         Relationships: NoRelationships;
       };
+      exam_integrity_events: {
+        Row: {
+          id: string;
+          attempt_id: string;
+          student_id: string;
+          event_type: "fullscreen_entry" | "fullscreen_exit" | "visibility_hidden" | "visibility_visible" | "window_blur" | "window_focus" | "reconnect" | "submission" | "heartbeat";
+          metadata: Json;
+          client_timestamp: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          attempt_id: string;
+          student_id: string;
+          event_type: "fullscreen_entry" | "fullscreen_exit" | "visibility_hidden" | "visibility_visible" | "window_blur" | "window_focus" | "reconnect" | "submission" | "heartbeat";
+          metadata?: Json;
+          client_timestamp: string;
+          created_at?: string;
+        };
+        Update: {
+          event_type?: "fullscreen_entry" | "fullscreen_exit" | "visibility_hidden" | "visibility_visible" | "window_blur" | "window_focus" | "reconnect" | "submission" | "heartbeat";
+          metadata?: Json;
+          client_timestamp?: string;
+        };
+        Relationships: NoRelationships;
+      };
+      admin_audit_logs: {
+        Row: {
+          id: string;
+          admin_id: string | null;
+          action: string;
+          target_type: string;
+          target_id: string;
+          details: Json;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_id?: string | null;
+          action: string;
+          target_type: string;
+          target_id: string;
+          details?: Json;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          action?: string;
+          target_type?: string;
+          target_id?: string;
+          details?: Json;
+          ip_address?: string | null;
+        };
+        Relationships: NoRelationships;
+      };
     };
     Views: {
       questions_public: {

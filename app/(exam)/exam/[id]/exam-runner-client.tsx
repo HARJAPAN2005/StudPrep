@@ -35,6 +35,7 @@ import {
   submitExamAttemptAction,
   type ActiveAttemptState,
 } from "@/app/actions/exam-engine";
+import { logIntegrityEventAction } from "@/app/actions/integrity";
 
 interface ExamRunnerClientProps {
   initialState: ActiveAttemptState;
@@ -52,6 +53,8 @@ export function ExamRunnerClient({ initialState }: ExamRunnerClientProps) {
 
   // Instructions & Confirmation Modals
   const [isInstructionsOpen, setIsInstructionsOpen] = React.useState(initialState.status === "not_started");
+  const [integrityAcknowledged, setIntegrityAcknowledged] = React.useState(initialState.status !== "not_started");
+  const [integrityToast, setIntegrityToast] = React.useState<string | null>(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = React.useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
@@ -203,6 +206,71 @@ export function ExamRunnerClient({ initialState }: ExamRunnerClientProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, currentQ, questions.length, isSubmitModalOpen, isInstructionsOpen, handleSelectOption, jumpToQuestion]);
 
+  // Examination Integrity Telemetry (focus loss, visibility change, fullscreen transitions)
+  React.useEffect(() => {
+    if (isInstructionsOpen || initialState.isFinalized) return;
+
+    const logSignal = (
+      eventType:
+        | "fullscreen_entry"
+        | "fullscreen_exit"
+        | "visibility_hidden"
+        | "visibility_visible"
+        | "window_blur"
+        | "window_focus"
+    ) => {
+      logIntegrityEventAction({
+        attemptId: initialState.attemptId,
+        eventType,
+        metadata: { currentQuestionIndex: currentIndex },
+        clientTimestamp: new Date().toISOString(),
+      })
+        .then((res) => {
+          if (res.success && res.warningCount && res.warningCount > 0) {
+            if (["fullscreen_exit", "visibility_hidden", "window_blur"].includes(eventType)) {
+              setIntegrityToast(
+                `Browser focus change recorded (${res.warningCount} events logged). Please stay focused on your exam.`
+              );
+            }
+          }
+        })
+        .catch(() => {});
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        logSignal("visibility_hidden");
+      } else {
+        logSignal("visibility_visible");
+      }
+    };
+
+    const handleBlur = () => logSignal("window_blur");
+    const handleFocus = () => logSignal("window_focus");
+
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement) {
+        setIsFullscreen(true);
+        logSignal("fullscreen_entry");
+      } else {
+        setIsFullscreen(false);
+        logSignal("fullscreen_exit");
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [isInstructionsOpen, initialState.attemptId, initialState.isFinalized, currentIndex]);
+
   const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -297,6 +365,27 @@ export function ExamRunnerClient({ initialState }: ExamRunnerClientProps) {
           </Button>
         </div>
       </header>
+
+      {/* ── Non-Punitive Integrity Notice Toast ─────────────────────────────── */}
+      {integrityToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-300 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+            <span>{integrityToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIntegrityToast(null)}
+            className="text-[10px] text-amber-400 hover:text-amber-200 underline ml-4"
+          >
+            Acknowledge
+          </button>
+        </div>
+      )}
 
       {/* ── Main Testing Workstation ────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
@@ -534,12 +623,27 @@ export function ExamRunnerClient({ initialState }: ExamRunnerClientProps) {
                 You can use numeric keys (1-4) or letters (A-D) to select answers via your keyboard.
               </li>
             </ul>
+
+            <div className="pt-2 border-t border-slate-800">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={integrityAcknowledged}
+                  onChange={(e) => setIntegrityAcknowledged(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-[11px] text-slate-300">
+                  I understand that browser focus, window visibility, and fullscreen state are logged during this examination session to maintain integrity. No camera, audio, or invasive device recording is used.
+                </span>
+              </label>
+            </div>
           </div>
 
           <DialogFooter>
             <Button
               onClick={() => setIsInstructionsOpen(false)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow gap-2"
+              disabled={!integrityAcknowledged}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow gap-2 disabled:opacity-50"
             >
               <Play className="h-4 w-4 fill-current" /> I Understand & Begin Examination
             </Button>

@@ -158,6 +158,20 @@ Uploaded documents and extracted text are treated as **untrusted user input**, n
 - **Post-Submission Bounded AI Tutor**: AI tutoring is locked during active exam attempts (`403 Forbidden`). Prompts are strictly bounded to the single question stem, submitted answer, and correct explanation, preventing answer key disclosure across un-attempted questions.
 - **Transparent Provenance & Uncertainty**: AI tutor output surfaces explicit confidence tags (`verified_source`, `inferred`, `general_knowledge`) and cache provenance badges, preventing candidates from mistaking AI conjecture for syllabus truth.
 
+### 13. Examination Integrity Telemetry & Non-Punitive Audit (Phase 10)
+
+- **Privacy-Preserving Telemetry**: Browser events (`fullscreen_entry`, `fullscreen_exit`, `visibility_hidden`, `visibility_visible`, `window_blur`, `window_focus`, `reconnect`, `submission`) are logged via `exam_integrity_events`.
+- **Zero Invasive Capture**: No webcam, microphone, or invasive screen-recording media is captured. The extension point in `lib/integrity/proctoring-extension.ts` is explicitly deactivated by default.
+- **Pre-Exam Consent**: Mandatory student acknowledgement is collected before monitored examinations begin.
+- **Non-Punitive Diagnostic Indicators**: Single browser events never trigger automated cheating disqualification; warnings inform the student and telemetry is surfaced for administrative review.
+- **Immutable Consequential Admin Audit Trail**: All administrative interventions (job retries, question dispute resolutions, data purges) write immutable records to `admin_audit_logs`.
+
+### 14. Data Retention, GDPR Export & Cascade Purge (Phase 10 & 11)
+
+- **Right to Erasure (GDPR / NDPR)**: `deleteStudyMaterialAction` and `deleteStudentAccountAction` cascade through database records and immediately purge underlying private storage blobs in `materials/{user_id}/`.
+- **Right to Portability**: `exportStudentDataAction` generates a complete machine-readable JSON package of student profile, document metadata, exam attempts, and integrity event counts, without exposing internal server keys.
+- **Storage Path Traversal Protection**: All storage removal operations strictly require user namespace verification (`{user_id}/{filename}`). Path traversal sequences (`..`) and cross-student deletions are blocked.
+
 ---
 
 ## Security Checklist (Pre-deploy)

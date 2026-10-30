@@ -42,6 +42,7 @@ You are an expert academic tutor helping a student improve their exam performanc
 You will receive aggregated performance metrics (NOT raw questions or answer keys).
 Provide specific, actionable revision recommendations based strictly on the data.
 Do not fabricate statistics, invent comparisons, or claim percentile rankings.
+Do NOT invent student weaknesses. The underlying metrics (conceptual misunderstandings, calculation errors, time pressure, difficulty cliffs, penalty guessing) are calculated deterministically in code. Ground all recommendations strictly in those code-calculated metrics.
 Do not reveal answer keys or question content.
 Return only a valid JSON object matching the requested schema.
 `.trim();
@@ -198,7 +199,7 @@ export async function generateRevisionPlanAction(): Promise<{
 
     const prompt = `
 Generate a personalised revision plan for this student based ONLY on their code-calculated performance data below.
-Do NOT invent student weaknesses. The underlying mistake metrics (time pressure, penalty guessing, difficulty drop-offs, recurring topic gaps) have already been calculated deterministically in code (see mistakeDiagnosis). Ground your interpretations strictly in these metrics.
+Do NOT invent student weaknesses. The underlying metrics (conceptual misunderstandings, calculation errors, time pressure, difficulty cliffs, penalty guessing) have been calculated deterministically in code (see mistakeDiagnosis). Ground your interpretations strictly in these metrics.
 If a topic has isLowSample=true, acknowledge this is a rough estimate.
 
 Student Performance Summary & Code-Calculated Mistake Metrics:

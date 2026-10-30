@@ -374,6 +374,82 @@ describe("Analytics Engine", () => {
       expect(diagnosis.difficultyCliff.detected).toBe(true);
       expect(diagnosis.primaryFactors.some((f) => f.type === "difficulty_cliff")).toBe(true);
     });
+    it("detects calculation & formula errors when quantitative questions have errors", () => {
+      const quantAttempt = makeAttempt({
+        detailed_results: [
+          {
+            questionId: "q-math-1",
+            body: "Calculate 2x + 5 = 15",
+            submittedOptionId: "opt-a",
+            correctOptionId: "opt-b",
+            isCorrect: false,
+            isAttempted: true,
+            marksAwarded: 0,
+            maxMarks: 1.0,
+            negativeMarks: 0,
+            topicTags: ["Algebra"],
+            sectionId: null,
+            explanation: "Calculation error: 2x = 10, x = 5",
+            options: [
+              { id: "opt-a", label: "A", text: "4" },
+              { id: "opt-b", label: "B", text: "5" },
+            ],
+            sourceReference: { sourceType: "original_source", pageNumber: 1 },
+            reviewStatus: "verified",
+            isAiGenerated: false,
+            needsVerification: false,
+            difficulty: "medium",
+          },
+        ],
+      });
+
+      const diagnosis = computeMistakeDiagnosis(
+        [],
+        [],
+        { easy: { total: 0, correct: 0, accuracy: 0 }, medium: { total: 1, correct: 0, accuracy: 0 }, hard: { total: 0, correct: 0, accuracy: 0 } },
+        0,
+        0,
+        1,
+        60,
+        [quantAttempt]
+      );
+
+      expect(diagnosis.calculationErrors?.detected).toBe(true);
+      expect(diagnosis.calculationErrors?.errorCount).toBe(1);
+      expect(diagnosis.primaryFactors.some((f) => f.type === "calculation_error")).toBe(true);
+    });
+
+    it("detects conceptual gap when recurring mistakes occur in the same topic", () => {
+      const topicAnalytics = [
+        {
+          topic: "Thermodynamics",
+          totalQuestions: 6,
+          correctCount: 2,
+          incorrectCount: 4,
+          unansweredCount: 0,
+          accuracy: 33,
+          overallScore: 33,
+          marksObtained: 2,
+          maxMarks: 6,
+          masteryLevel: "needs_review" as const,
+          isLowSample: false,
+          examCount: 2,
+        },
+      ];
+
+      const diagnosis = computeMistakeDiagnosis(
+        [],
+        topicAnalytics,
+        { easy: { total: 0, correct: 0, accuracy: 0 }, medium: { total: 0, correct: 0, accuracy: 0 }, hard: { total: 0, correct: 0, accuracy: 0 } },
+        0,
+        0,
+        6,
+        300
+      );
+
+      expect(diagnosis.recurringMistakes).toHaveLength(1);
+      expect(diagnosis.primaryFactors.some((f) => f.type === "conceptual_gap")).toBe(true);
+    });
   });
 
   describe("computeFiveQuestionsDiagnostic (The 5 Core Questions)", () => {

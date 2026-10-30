@@ -383,15 +383,94 @@ function FiveQuestionsDiagnosticSection({
               The Five Core Diagnostic Questions
             </CardTitle>
             <CardDescription>
-              Objective answers to five critical preparation questions, backed by code-calculated metrics
+              Deterministic answers to five critical preparation questions, calculated directly from attempt metrics
             </CardDescription>
           </div>
-          <Badge variant="outline" className="text-xs border-indigo-500/30 text-indigo-400 font-mono w-fit">
-            Deterministic Diagnostics
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs border-indigo-500/30 text-indigo-400 font-mono w-fit">
+              Deterministic Code Calculation
+            </Badge>
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
+        {/* Five Questions Executive Summary Table */}
+        <div className="overflow-x-auto rounded-lg border border-border bg-card/60">
+          <table className="w-full text-left text-xs" aria-label="Five Core Diagnostic Questions Summary">
+            <thead className="bg-muted/50 text-muted-foreground font-semibold uppercase tracking-wider text-[11px] border-b border-border">
+              <tr>
+                <th className="py-2.5 px-3 w-1/4">Question</th>
+                <th className="py-2.5 px-3 w-1/3">Target Result</th>
+                <th className="py-2.5 px-3">Code-Calculated Metric &amp; Evidence</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              <tr>
+                <td className="py-2.5 px-3 font-semibold text-foreground">What am I good at?</td>
+                <td className="py-2.5 px-3 text-muted-foreground">Strong topics backed by actual attempts</td>
+                <td className="py-2.5 px-3 text-foreground font-medium">
+                  {whatAmIGoodAt.strongTopics.length > 0 ? (
+                    <span className="text-emerald-500">
+                      {whatAmIGoodAt.strongTopics.map((t) => `${t.topic} (${t.accuracy}%)`).slice(0, 3).join(", ")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic">No strong topics established yet</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-semibold text-foreground">Where am I losing marks?</td>
+                <td className="py-2.5 px-3 text-muted-foreground">Weak topics and recurring mistakes</td>
+                <td className="py-2.5 px-3 text-foreground font-medium">
+                  {whereAmILosingMarks.weakTopics.length > 0 ? (
+                    <span className="text-rose-500">
+                      {whereAmILosingMarks.weakTopics.map((t) => `${t.topic} (${t.accuracy}%)`).slice(0, 3).join(", ")}
+                      {whereAmILosingMarks.marksLostBreakdown.penalties > 0 && ` · -${whereAmILosingMarks.marksLostBreakdown.penalties} penalty marks`}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic">No weak topics identified</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-semibold text-foreground">Why am I making mistakes?</td>
+                <td className="py-2.5 px-3 text-muted-foreground">
+                  Conceptual misunderstandings, calculation errors or time pressure, where evidence supports them
+                </td>
+                <td className="py-2.5 px-3 text-foreground font-medium">
+                  {whyAmIMakingMistakes.primaryFactors.length > 0 ? (
+                    <span className="text-amber-500">
+                      {whyAmIMakingMistakes.primaryFactors.map((f) => f.title).join("; ")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic">No systemic error pattern detected</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-semibold text-foreground">How am I improving?</td>
+                <td className="py-2.5 px-3 text-muted-foreground">Trend over completed attempts</td>
+                <td className="py-2.5 px-3 text-foreground font-medium">
+                  {howAmIImproving.trendStatus !== "insufficient_data" ? (
+                    <span className={howAmIImproving.trendStatus === "improving" ? "text-emerald-500" : howAmIImproving.trendStatus === "declining" ? "text-rose-500" : "text-blue-500"}>
+                      {howAmIImproving.trendStatus} ({howAmIImproving.scoreDelta !== null && howAmIImproving.scoreDelta >= 0 ? `+${howAmIImproving.scoreDelta}%` : `${howAmIImproving.scoreDelta}%`})
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic">Requires ≥3 attempts for valid trend</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 px-3 font-semibold text-foreground">What should I do next?</td>
+                <td className="py-2.5 px-3 text-muted-foreground">A focused practice and revision plan</td>
+                <td className="py-2.5 px-3 text-foreground font-medium">
+                  <span className="text-indigo-400 font-semibold">{whatShouldIDoNext.recommendedAction}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Question 1: What am I good at? */}
           <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-950/10 space-y-2.5">

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { AnalyticsDashboardClient } from "@/app/(dashboard)/analytics/analytics-client";
+import { AnalyticsDashboardClient } from "@/app/(dashboard)/dashboard/analytics/analytics-client";
 import type { AnalyticsDashboardPayload, RevisionPlanOutput } from "@/lib/schemas/analytics";
 import * as analyticsActions from "@/app/actions/analytics";
 
@@ -338,7 +338,7 @@ describe("AnalyticsDashboardClient Component", () => {
     // 3. Why am I making mistakes?
     expect(screen.getByText(/3\. Why am I making mistakes\?/i)).toBeDefined();
     expect(screen.getAllByText(/Tactical Guessing Penalty/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Pacing & Time Pressure/i)).toBeDefined();
+    expect(screen.getAllByText(/Pacing & Time Pressure/i).length).toBeGreaterThanOrEqual(1);
 
     // 4. How am I improving?
     expect(screen.getByText(/4\. How am I improving\?/i)).toBeDefined();

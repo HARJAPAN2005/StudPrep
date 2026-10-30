@@ -22,13 +22,13 @@ test.describe("StudPilot CBT Platform E2E Workflows", () => {
   });
 
   test("Workflow 2 & 3: Material Library and Ingestion UI Shell", async ({ page }) => {
-    await page.goto("/materials");
+    await page.goto("/dashboard/materials");
     // Verify materials shell page renders
     await expect(page.locator("body")).toBeVisible();
   });
 
   test("Workflow 4: Exam Configuration Studio", async ({ page }) => {
-    await page.goto("/exams/builder");
+    await page.goto("/dashboard/exams/builder");
     await expect(page.locator("body")).toBeVisible();
   });
 
@@ -39,7 +39,7 @@ test.describe("StudPilot CBT Platform E2E Workflows", () => {
   });
 
   test("Workflow 7: Results, Explanations and Analytics", async ({ page }) => {
-    await page.goto("/analytics");
+    await page.goto("/dashboard/analytics");
     await expect(page.locator("body")).toBeVisible();
   });
 

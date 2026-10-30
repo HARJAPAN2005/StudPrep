@@ -90,7 +90,13 @@ export type ScoreTrendPoint = z.infer<typeof ScoreTrendPointSchema>;
 // ── The Five Questions Diagnostic Schemas ────────────────────────────────────
 
 export const MistakeDiagnosisFactorSchema = z.object({
-  type: z.enum(["time_pressure", "penalty_guessing", "difficulty_cliff", "conceptual_gap"]),
+  type: z.enum([
+    "time_pressure",
+    "penalty_guessing",
+    "difficulty_cliff",
+    "conceptual_gap",
+    "calculation_error",
+  ]),
   title: z.string(),
   evidence: z.string(),
 });
@@ -114,6 +120,14 @@ export const MistakeDiagnosisSchema = z.object({
     hardAccuracy: z.number(),
     rationale: z.string(),
   }),
+  calculationErrors: z
+    .object({
+      detected: z.boolean(),
+      errorCount: z.number().int(),
+      topics: z.array(z.string()),
+      rationale: z.string(),
+    })
+    .optional(),
   recurringMistakes: z.array(
     z.object({
       topic: z.string(),

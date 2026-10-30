@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ExamStudioClient } from "@/app/(dashboard)/exams/builder/exam-studio-client";
+import { ExamStudioClient } from "@/app/(dashboard)/dashboard/exams/builder/exam-studio-client";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({

@@ -314,7 +314,8 @@ export function computeMistakeDiagnosis(
   skipRate: number,
   negativeMarkImpact: number,
   totalQuestions: number,
-  totalTimeSpentSeconds: number
+  totalTimeSpentSeconds: number,
+  attempts: RawAttemptRecord[] = []
 ): MistakeDiagnosis {
   const avgSecondsPerQ = totalQuestions > 0 ? Math.round(totalTimeSpentSeconds / totalQuestions) : 0;
 
@@ -355,8 +356,64 @@ export function computeMistakeDiagnosis(
       examCount: t.examCount,
     }));
 
-  // 5. Compile Primary Factors supported by code evidence
+  // 5. Calculation / Formula Errors (backed by quantitative attempts)
+  const QUANTITATIVE_REGEX = /(math|algebra|calcul|arithm|geometr|statist|trig|physic|chem|stoich|kinemat|numer|equation|formula)/i;
+  const calcMistakeTopics = new Set<string>();
+  let calcErrorCount = 0;
+
+  for (const a of attempts) {
+    const detailed = safeDetailedResults(a.detailed_results);
+    for (const q of detailed) {
+      if (q.isAttempted && !q.isCorrect) {
+        const isQuantTopic = (q.topicTags ?? []).some((t) => QUANTITATIVE_REGEX.test(t));
+        const hasNumericOptions = q.options?.some(
+          (o) => /^\s*[\d+-]/.test(o.text) || /\b\d+(\.\d+)?\b/.test(o.text)
+        );
+        const mentionsCalc = /(calculat|arithmetic|formula|sign error|computation)/i.test(q.explanation || "");
+        if (isQuantTopic || hasNumericOptions || mentionsCalc) {
+          calcErrorCount++;
+          const primaryTag = q.topicTags?.[0] || "Quantitative Topics";
+          calcMistakeTopics.add(primaryTag);
+        }
+      }
+    }
+  }
+
+  const calculationDetected = calcErrorCount > 0;
+  const calcTopicsList = Array.from(calcMistakeTopics);
+  const calculationRationale = calculationDetected
+    ? `${calcErrorCount} calculation- or formula-related error${calcErrorCount === 1 ? "" : "s"} detected across ${calcTopicsList.slice(0, 3).join(", ")}.`
+    : `No systematic calculation or arithmetic errors identified.`;
+
+  // 6. Compile Primary Factors supported by concrete code evidence
   const primaryFactors: MistakeDiagnosisFactor[] = [];
+
+  if (recurringMistakes.length > 0) {
+    const topRecurring = recurringMistakes.slice(0, 2).map((r) => r.topic).join(", ");
+    primaryFactors.push({
+      type: "conceptual_gap",
+      title: "Conceptual Misunderstandings",
+      evidence: `Persistent errors detected in ${topRecurring} across multiple completed sessions.`,
+    });
+  }
+
+  if (calculationDetected) {
+    primaryFactors.push({
+      type: "calculation_error",
+      title: "Calculation & Formula Errors",
+      evidence: calculationRationale,
+    });
+  }
+
+  if (timePressureDetected) {
+    primaryFactors.push({
+      type: "time_pressure",
+      title: "Time Pressure & Pacing",
+      evidence: isHighSkip
+        ? `${skipRate}% of all exam items were left unattempted.`
+        : `Rushed pacing at ${avgSecondsPerQ}s/question.`,
+    });
+  }
 
   if (penaltyDetected) {
     primaryFactors.push({
@@ -366,30 +423,11 @@ export function computeMistakeDiagnosis(
     });
   }
 
-  if (timePressureDetected) {
-    primaryFactors.push({
-      type: "time_pressure",
-      title: "Pacing & Time Pressure",
-      evidence: isHighSkip
-        ? `${skipRate}% of all exam items were left unattempted.`
-        : `Rushed pacing at ${avgSecondsPerQ}s/question.`,
-    });
-  }
-
   if (difficultyCliffDetected) {
     primaryFactors.push({
       type: "difficulty_cliff",
       title: "High-Complexity Problem Friction",
       evidence: `Accuracy drops from ${easyAcc}% on easy items to ${hardAcc}% on hard items.`,
-    });
-  }
-
-  if (recurringMistakes.length > 0) {
-    const topRecurring = recurringMistakes.slice(0, 2).map((r) => r.topic).join(", ");
-    primaryFactors.push({
-      type: "conceptual_gap",
-      title: "Recurring Topic Misconceptions",
-      evidence: `Persistent errors detected in ${topRecurring} across multiple completed sessions.`,
     });
   }
 
@@ -410,6 +448,12 @@ export function computeMistakeDiagnosis(
       easyAccuracy: easyAcc,
       hardAccuracy: hardAcc,
       rationale: difficultyCliffRationale,
+    },
+    calculationErrors: {
+      detected: calculationDetected,
+      errorCount: calcErrorCount,
+      topics: calcTopicsList,
+      rationale: calculationRationale,
     },
     recurringMistakes,
     primaryFactors,
@@ -433,7 +477,8 @@ export function computeFiveQuestionsDiagnostic(
   skipRate: number,
   negativeMarkImpact: number,
   totalQuestions: number,
-  totalTimeSpentSeconds: number
+  totalTimeSpentSeconds: number,
+  attempts: RawAttemptRecord[] = []
 ): FiveQuestionsDiagnostic {
   // 1. What am I good at? (Strong topics: accuracy >= 70% or overallScore >= 65%)
   const strongTopics = topicAnalytics
@@ -459,7 +504,8 @@ export function computeFiveQuestionsDiagnostic(
     skipRate,
     negativeMarkImpact,
     totalQuestions,
-    totalTimeSpentSeconds
+    totalTimeSpentSeconds,
+    attempts
   );
 
   const recurringMistakeTopics = mistakeDiagnosis.recurringMistakes.map((r) => r.topic);
@@ -575,6 +621,7 @@ export function buildAnalyticsDashboard(
         timePressure: { detected: false, rationale: "No data.", skipRate: 0, avgSecondsPerQuestion: 0 },
         negativeMarkPenalty: { detected: false, marksLost: 0, rationale: "No data." },
         difficultyCliff: { detected: false, easyAccuracy: 0, hardAccuracy: 0, rationale: "No data." },
+        calculationErrors: { detected: false, errorCount: 0, topics: [], rationale: "No data." },
         recurringMistakes: [],
         primaryFactors: [],
       },
@@ -637,7 +684,8 @@ export function buildAnalyticsDashboard(
     skipRate,
     totalNegativeImpact,
     totalQ,
-    totalTimeSpent
+    totalTimeSpent,
+    finalized
   );
 
   return {

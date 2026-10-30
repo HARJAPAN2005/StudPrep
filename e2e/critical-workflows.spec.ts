@@ -50,3 +50,4 @@ test.describe("StudPilot CBT Platform E2E Workflows", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 });
+

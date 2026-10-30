@@ -151,6 +151,13 @@ Uploaded documents and extracted text are treated as **untrusted user input**, n
 - **Idempotent Atomic Finalization**: Finalized attempts cannot be modified, re-scored, or double-submitted. Concurrent requests receive identical, tamper-proof cached results.
 - **Student-Scoped Question Reporting**: The `reported_questions` table is secured with RLS (`auth.uid() = student_id`). Students cannot dispute questions or inspect reports belonging to other students.
 
+### 12. Student Analytics & AI Tutor Isolation (Phase 9)
+
+- **Strict Student Ownership Isolation**: Analytics queries are strictly scoped to the authenticated user (`student_id = auth.uid()`). Cross-student analytics aggregation or record inspection is blocked by RLS policies and server-side verification.
+- **Aggregated AI Prompts Only**: The AI revision-plan generator never receives raw document text, un-attempted questions, or sensitive student PII. Only authorized, schema-validated metric summaries are provided to the model.
+- **Post-Submission Bounded AI Tutor**: AI tutoring is locked during active exam attempts (`403 Forbidden`). Prompts are strictly bounded to the single question stem, submitted answer, and correct explanation, preventing answer key disclosure across un-attempted questions.
+- **Transparent Provenance & Uncertainty**: AI tutor output surfaces explicit confidence tags (`verified_source`, `inferred`, `general_knowledge`) and cache provenance badges, preventing candidates from mistaking AI conjecture for syllabus truth.
+
 ---
 
 ## Security Checklist (Pre-deploy)

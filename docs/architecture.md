@@ -223,3 +223,27 @@ The AI Document Intelligence pipeline processes ingested syllabus materials and 
    - After submission or expiration, candidates review detailed worked rationales, distractor explanations, and page-level source references.
    - Questions synthesized by AI are explicitly badged (`AI Synthesized` vs `Source Paper`).
    - Candidates can flag disputed answer keys, ambiguous questions, or typos into `reported_questions` table with verified student ownership.
+
+---
+
+### 3.4 Student Analytics, AI Revision Plan & Question AI Tutor (Phase 9)
+
+1. **Pure Analytics Engine (`lib/analytics/analytics-engine.ts`)**:
+   - Pure, zero-dependency aggregation layer computing performance metrics across finalized `exam_attempts` (`status IN ('submitted', 'expired')`).
+   - Metric definitions:
+     - `accuracy` = correct / attempted (unanswered questions excluded from denominator).
+     - `overallScore` = correct / total questions (unanswered questions count against candidate).
+     - `skipRate` = total unanswered / total questions across all attempts.
+     - `negativeMarkImpact` = cumulative deduction penalty from incorrect guesses (positive number).
+   - Small-sample safeguard (`MIN_RELIABLE_SAMPLE = 5`): Topics with fewer than 5 recorded questions are explicitly flagged `isLowSample = true` and labelled as rough estimates.
+   - Trend sufficiency safeguard (`MIN_TREND_EXAMS = 3`): Trajectories and directional indicators are only computed when at least 3 finalized exams exist, preventing misleading noise.
+   - Strictly eliminates mock/fabricated stats: no invented cohort percentiles, no fake week-over-week deltas, and no speculative grade predictions.
+2. **Authorized AI Revision Plan (`app/actions/analytics.ts`)**:
+   - Generates personalized study recommendations grounded strictly in the student's authorized performance aggregates.
+   - Strips all raw document text, un-attempted question bodies, and answer keys before model ingestion.
+   - Structured schema (`RevisionPlanOutputSchema`) enforces priority levels (`critical`, `high`, `medium`), actionable steps, low-sample warnings, and transparency disclaimers.
+3. **Per-Question AI Tutor (`components/exam/question-tutor-panel.tsx`)**:
+   - Available exclusively post-submission on finalized attempts; attempts in progress return `403 Forbidden`.
+   - Lazy-loaded per question and cached in `question_tutor_cache` table keyed on `(attempt_id, question_id)`.
+   - Provides pedagogical rationales: why the correct option is right, misconception analysis of the candidate's chosen distractor, core concept summary, intuitive analogy, and practice suggestions.
+   - Explicitly displays uncertainty levels (`verified_source`, `inferred`, `general_knowledge`) and cache provenance badges.

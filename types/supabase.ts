@@ -636,6 +636,37 @@ export interface Database {
         };
         Relationships: NoRelationships;
       };
+      question_tutor_cache: {
+        Row: {
+          id: string;
+          attempt_id: string;
+          student_id: string;
+          question_id: string;
+          response: Json;
+          input_tokens: number;
+          output_tokens: number;
+          latency_ms: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          attempt_id: string;
+          student_id: string;
+          question_id: string;
+          response: Json;
+          input_tokens?: number;
+          output_tokens?: number;
+          latency_ms?: number;
+          created_at?: string;
+        };
+        Update: {
+          response?: Json;
+          input_tokens?: number;
+          output_tokens?: number;
+          latency_ms?: number;
+        };
+        Relationships: NoRelationships;
+      };
     };
     Views: {
       questions_public: {

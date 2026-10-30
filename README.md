@@ -4,9 +4,16 @@
 
 ---
 
-## 🚀 Key Features (Phases 1 - 8 Completed)
+## 🚀 Key Features (Phases 1 - 9 Completed)
 
-1. **Deterministic Server-Side Grading & Results Diagnostics (Phase 8)**:
+1. **Student Analytics, Revision Plan & AI Tutor (Phase 9)**:
+   - Pure, zero-dependency performance analytics engine computing real accuracy, overall score, pacing, skip rate, and negative-mark deductions.
+   - Small-sample safeguards (`MIN_RELIABLE_SAMPLE = 5`) flagging low-data topics with clear "(Estimate)" caveats.
+   - Trend sufficiency safeguards (`MIN_TREND_EXAMS = 3`) requiring authentic historical depth before drawing score trajectories.
+   - Zero fabricated metrics: completely stripped fake cohort percentiles, simulated week-over-week deltas, and speculative grade predictions.
+   - Server-side AI revision-plan generator using authorized, schema-validated aggregates to produce prioritized study actions without exposing document text.
+   - Post-submission per-question AI tutor with cached pedagogical breakdowns (why right, misconception analysis, intuitive analogies, practice advice, uncertainty levels).
+2. **Deterministic Server-Side Grading & Results Diagnostics (Phase 8)**:
    - Pure algorithmic grading of objective question types (`single_choice`, `true_false`) with zero reliance on AI models as authoritative evaluators.
    - Positive marks, configurable negative penalties, zero-mark clamping (scores >= 0), and section/topic score aggregation.
    - Topic mastery classifications (`mastered` >= 75%, `competent` >= 50%, `needs_review` < 50%).

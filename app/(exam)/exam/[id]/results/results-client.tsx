@@ -32,6 +32,7 @@ import {
 import type { DetailedExamReviewPayload } from "@/app/actions/grading";
 import { reportQuestionAction } from "@/app/actions/grading";
 import type { ReportIssueType } from "@/lib/schemas/grading";
+import { QuestionTutorPanel } from "@/components/exam/question-tutor-panel";
 
 interface ResultsClientProps {
   initialPayload: DetailedExamReviewPayload;
@@ -504,6 +505,12 @@ export function ResultsClient({ initialPayload }: ResultsClientProps) {
                         </div>
                       )}
                     </div>
+
+                    {/* AI Tutor Pedagogical Breakdown */}
+                    <QuestionTutorPanel
+                      attemptId={initialPayload.attemptId}
+                      questionId={q.questionId}
+                    />
                   </div>
                 );
               })}

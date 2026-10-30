@@ -32,6 +32,9 @@ import {
   AlertCircle,
   Loader2,
   Info,
+  Compass,
+  ArrowRight,
+  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +52,7 @@ import type {
   RevisionPlanOutput,
   SubjectBreakdown,
   TopicAnalytic,
+  FiveQuestionsDiagnostic,
 } from "@/lib/schemas/analytics";
 
 // ── Helper utilities ──────────────────────────────────────────────────────────
@@ -360,6 +364,178 @@ function RevisionPlanSection() {
   );
 }
 
+// ── The Five Questions Diagnostic View ────────────────────────────────────────
+
+function FiveQuestionsDiagnosticSection({
+  fiveQuestions,
+}: {
+  fiveQuestions: FiveQuestionsDiagnostic;
+}) {
+  const { whatAmIGoodAt, whereAmILosingMarks, whyAmIMakingMistakes, howAmIImproving, whatShouldIDoNext } = fiveQuestions;
+
+  return (
+    <Card className="border-indigo-500/20 bg-gradient-to-b from-indigo-950/10 to-transparent">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
+              <Compass className="h-5 w-5 text-indigo-500" />
+              The Five Core Diagnostic Questions
+            </CardTitle>
+            <CardDescription>
+              Objective answers to five critical preparation questions, backed by code-calculated metrics
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="text-xs border-indigo-500/30 text-indigo-400 font-mono w-fit">
+            Deterministic Diagnostics
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Question 1: What am I good at? */}
+          <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-950/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4" /> 1. What am I good at?
+              </span>
+              <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-800 font-mono">
+                {whatAmIGoodAt.strongTopics.length} Strong
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {whatAmIGoodAt.summary}
+            </p>
+            {whatAmIGoodAt.strongTopics.length > 0 && (
+              <div className="space-y-1.5 pt-1 border-t border-emerald-500/10">
+                {whatAmIGoodAt.strongTopics.slice(0, 3).map((t) => (
+                  <div key={t.topic} className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground truncate max-w-[150px]">{t.topic}</span>
+                    <span className="font-mono text-emerald-500 font-bold">{t.accuracy}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Question 2: Where am I losing marks? */}
+          <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-950/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4" /> 2. Where am I losing marks?
+              </span>
+              <Badge variant="outline" className="text-[10px] text-rose-400 border-rose-800 font-mono">
+                {whereAmILosingMarks.weakTopics.length} Weak Topics
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {whereAmILosingMarks.summary}
+            </p>
+            <div className="grid grid-cols-3 gap-1 pt-1 border-t border-rose-500/10 text-center">
+              <div className="p-1 rounded bg-rose-950/20">
+                <span className="text-[10px] text-muted-foreground block">Penalties</span>
+                <span className="text-xs font-mono font-bold text-rose-400">-{whereAmILosingMarks.marksLostBreakdown.penalties}m</span>
+              </div>
+              <div className="p-1 rounded bg-rose-950/20">
+                <span className="text-[10px] text-muted-foreground block">Skipped</span>
+                <span className="text-xs font-mono font-bold text-amber-400">{whereAmILosingMarks.marksLostBreakdown.unattemptedMarks} Q</span>
+              </div>
+              <div className="p-1 rounded bg-rose-950/20">
+                <span className="text-[10px] text-muted-foreground block">Wrong</span>
+                <span className="text-xs font-mono font-bold text-rose-400">{whereAmILosingMarks.marksLostBreakdown.incorrectMarks} Q</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Question 3: Why am I making mistakes? */}
+          <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-950/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                <BrainCircuit className="h-4 w-4" /> 3. Why am I making mistakes?
+              </span>
+              <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-800 font-mono">
+                {whyAmIMakingMistakes.primaryFactors.length} Factors
+              </Badge>
+            </div>
+            <div className="space-y-1.5 text-xs text-muted-foreground">
+              {whyAmIMakingMistakes.primaryFactors.length === 0 ? (
+                <p>No systematic error pattern detected. Your errors are distributed across independent items.</p>
+              ) : (
+                whyAmIMakingMistakes.primaryFactors.map((f, i) => (
+                  <div key={i} className="space-y-0.5">
+                    <p className="font-semibold text-amber-700 dark:text-amber-300 text-[11px]">• {f.title}</p>
+                    <p className="text-[11px] pl-2 text-muted-foreground">{f.evidence}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Question 4: How am I improving? */}
+          <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-950/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                <TrendingUp className="h-4 w-4" /> 4. How am I improving?
+              </span>
+              <Badge
+                variant="outline"
+                className={`text-[10px] font-mono ${
+                  howAmIImproving.trendStatus === "improving"
+                    ? "text-emerald-400 border-emerald-800"
+                    : howAmIImproving.trendStatus === "declining"
+                      ? "text-rose-400 border-rose-800"
+                      : "text-slate-400 border-slate-700"
+                }`}
+              >
+                {howAmIImproving.trendStatus.replace("_", " ")}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {howAmIImproving.summary}
+            </p>
+            {howAmIImproving.scoreDelta !== null && (
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-foreground pt-1 border-t border-blue-500/10">
+                <span>Net Delta:</span>
+                <span className={howAmIImproving.scoreDelta >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                  {howAmIImproving.scoreDelta >= 0 ? "+" : ""}{howAmIImproving.scoreDelta}%
+                </span>
+                <span className="text-[10px] text-muted-foreground font-normal">across {howAmIImproving.attemptsCount} attempts</span>
+              </div>
+            )}
+          </div>
+
+          {/* Question 5: What should I do next? */}
+          <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-950/10 space-y-2.5 md:col-span-2 lg:col-span-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <Target className="h-4 w-4" /> 5. What should I do next?
+              </span>
+              {whatShouldIDoNext.drillUrl && (
+                <Button asChild size="sm" variant="default" className="h-7 text-xs gap-1">
+                  <Link href={whatShouldIDoNext.drillUrl}>
+                    Drill Weakest Topic <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+            <p className="text-xs font-semibold text-foreground">
+              {whatShouldIDoNext.recommendedAction}
+            </p>
+            <ul className="space-y-1 text-xs text-muted-foreground pt-1 border-t border-indigo-500/10">
+              {whatShouldIDoNext.actionSteps.map((step, i) => (
+                <li key={i} className="flex items-start gap-1.5">
+                  <span className="text-indigo-400 mt-0.5">•</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main Analytics Dashboard Client ──────────────────────────────────────────
 
 interface AnalyticsDashboardClientProps {
@@ -461,6 +637,9 @@ export function AnalyticsDashboardClient({ payload }: AnalyticsDashboardClientPr
           )}
         </div>
       )}
+
+      {/* ── Five Core Diagnostic Questions ───────────────────────────────── */}
+      <FiveQuestionsDiagnosticSection fiveQuestions={payload.fiveQuestions} />
 
       {/* ── Score Trend + Subject Breakdown ─────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

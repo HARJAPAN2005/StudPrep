@@ -87,6 +87,75 @@ export const ScoreTrendPointSchema = z.object({
 });
 export type ScoreTrendPoint = z.infer<typeof ScoreTrendPointSchema>;
 
+// ── The Five Questions Diagnostic Schemas ────────────────────────────────────
+
+export const MistakeDiagnosisFactorSchema = z.object({
+  type: z.enum(["time_pressure", "penalty_guessing", "difficulty_cliff", "conceptual_gap"]),
+  title: z.string(),
+  evidence: z.string(),
+});
+export type MistakeDiagnosisFactor = z.infer<typeof MistakeDiagnosisFactorSchema>;
+
+export const MistakeDiagnosisSchema = z.object({
+  timePressure: z.object({
+    detected: z.boolean(),
+    rationale: z.string(),
+    skipRate: z.number(),
+    avgSecondsPerQuestion: z.number(),
+  }),
+  negativeMarkPenalty: z.object({
+    detected: z.boolean(),
+    marksLost: z.number(),
+    rationale: z.string(),
+  }),
+  difficultyCliff: z.object({
+    detected: z.boolean(),
+    easyAccuracy: z.number(),
+    hardAccuracy: z.number(),
+    rationale: z.string(),
+  }),
+  recurringMistakes: z.array(
+    z.object({
+      topic: z.string(),
+      incorrectCount: z.number().int(),
+      examCount: z.number().int(),
+    })
+  ),
+  primaryFactors: z.array(MistakeDiagnosisFactorSchema),
+});
+export type MistakeDiagnosis = z.infer<typeof MistakeDiagnosisSchema>;
+
+export const FiveQuestionsDiagnosticSchema = z.object({
+  whatAmIGoodAt: z.object({
+    strongTopics: z.array(TopicAnalyticSchema),
+    summary: z.string(),
+  }),
+  whereAmILosingMarks: z.object({
+    weakTopics: z.array(TopicAnalyticSchema),
+    marksLostBreakdown: z.object({
+      penalties: z.number(),
+      unattemptedMarks: z.number(),
+      incorrectMarks: z.number(),
+    }),
+    recurringMistakeTopics: z.array(z.string()),
+    summary: z.string(),
+  }),
+  whyAmIMakingMistakes: MistakeDiagnosisSchema,
+  howAmIImproving: z.object({
+    trendStatus: z.enum(["improving", "declining", "stable", "insufficient_data"]),
+    scoreDelta: z.number().nullable(),
+    summary: z.string(),
+    attemptsCount: z.number().int(),
+  }),
+  whatShouldIDoNext: z.object({
+    topFocusTopic: z.string().nullable(),
+    recommendedAction: z.string(),
+    actionSteps: z.array(z.string()),
+    drillUrl: z.string().nullable(),
+  }),
+});
+export type FiveQuestionsDiagnostic = z.infer<typeof FiveQuestionsDiagnosticSchema>;
+
 // ── Full analytics dashboard payload ─────────────────────────────────────────
 
 export const AnalyticsDashboardPayloadSchema = z.object({
@@ -105,6 +174,7 @@ export const AnalyticsDashboardPayloadSchema = z.object({
   subjectBreakdowns: z.array(SubjectBreakdownSchema),
   topicAnalytics: z.array(TopicAnalyticSchema),
   difficultyBreakdown: DifficultyBreakdownSchema,
+  fiveQuestions: FiveQuestionsDiagnosticSchema,
   examHistory: z.array(ExamHistoryRowSchema),
   hasData: z.boolean(),
 });
@@ -117,6 +187,7 @@ export const RevisionPlanInputSchema = z.object({
   totalExams: z.number().int().min(1),
   overallAvgScore: z.number(),
   overallAccuracy: z.number(),
+  mistakeDiagnosis: MistakeDiagnosisSchema.optional(),
   topicAnalytics: z.array(z.object({
     topic: z.string(),
     accuracy: z.number(),

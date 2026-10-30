@@ -6,6 +6,8 @@ import {
   computeSubjectBreakdowns,
   computeScoreTrend,
   buildAnalyticsDashboard,
+  computeMistakeDiagnosis,
+  computeFiveQuestionsDiagnostic,
   MIN_RELIABLE_SAMPLE,
   MIN_TREND_EXAMS,
 } from "../analytics-engine";
@@ -326,6 +328,90 @@ describe("Analytics Engine", () => {
       const history = buildExamHistory(attempts, new Map([["snap-1", makeSnapshot()]]), SUBJECT_MAP);
       const breakdowns = computeSubjectBreakdowns(history, SUBJECT_MAP);
       expect(breakdowns[0].scoreTrend).toBe("improving");
+    });
+  });
+
+  describe("computeMistakeDiagnosis (Why am I making mistakes?)", () => {
+    it("detects penalty guessing when negativeMarkImpact > 0", () => {
+      const diagnosis = computeMistakeDiagnosis(
+        [],
+        [],
+        { easy: { total: 5, correct: 4, accuracy: 80 }, medium: { total: 5, correct: 3, accuracy: 60 }, hard: { total: 5, correct: 3, accuracy: 60 } },
+        5,
+        1.5, // 1.5 marks lost to penalties
+        15,
+        900
+      );
+      expect(diagnosis.negativeMarkPenalty.detected).toBe(true);
+      expect(diagnosis.negativeMarkPenalty.marksLost).toBe(1.5);
+      expect(diagnosis.primaryFactors.some((f) => f.type === "penalty_guessing")).toBe(true);
+    });
+
+    it("detects time pressure when skipRate is high (>12%)", () => {
+      const diagnosis = computeMistakeDiagnosis(
+        [],
+        [],
+        { easy: { total: 5, correct: 4, accuracy: 80 }, medium: { total: 5, correct: 3, accuracy: 60 }, hard: { total: 5, correct: 3, accuracy: 60 } },
+        20, // 20% skip rate
+        0,
+        15,
+        900
+      );
+      expect(diagnosis.timePressure.detected).toBe(true);
+      expect(diagnosis.primaryFactors.some((f) => f.type === "time_pressure")).toBe(true);
+    });
+
+    it("detects difficulty cliff when easy accuracy is high but hard accuracy is low", () => {
+      const diagnosis = computeMistakeDiagnosis(
+        [],
+        [],
+        { easy: { total: 10, correct: 9, accuracy: 90 }, medium: { total: 5, correct: 3, accuracy: 60 }, hard: { total: 5, correct: 1, accuracy: 20 } },
+        0,
+        0,
+        20,
+        1200
+      );
+      expect(diagnosis.difficultyCliff.detected).toBe(true);
+      expect(diagnosis.primaryFactors.some((f) => f.type === "difficulty_cliff")).toBe(true);
+    });
+  });
+
+  describe("computeFiveQuestionsDiagnostic (The 5 Core Questions)", () => {
+    it("answers all five diagnostic questions with evidence-based data", () => {
+      const history = buildExamHistory([makeAttempt()], new Map([["snap-1", makeSnapshot()]]), SUBJECT_MAP);
+      const topicAnalytics = computeTopicAnalytics(history, [makeAttempt()]);
+      const difficulty = computeDifficultyBreakdown([makeAttempt()]);
+      const trend = [{ attemptId: "att-1", label: "Attempt 1", score: 67, accuracy: 50, submittedAt: "2026-10-28T10:00:00Z" }];
+
+      const fiveQ = computeFiveQuestionsDiagnostic(
+        history,
+        topicAnalytics,
+        difficulty,
+        trend,
+        false, // 1 exam => trendSufficient = false
+        33,
+        0.25,
+        3,
+        300
+      );
+
+      // 1. What am I good at?
+      expect(fiveQ.whatAmIGoodAt.summary).toBeDefined();
+
+      // 2. Where am I losing marks?
+      expect(fiveQ.whereAmILosingMarks.weakTopics).toBeDefined();
+      expect(fiveQ.whereAmILosingMarks.marksLostBreakdown.penalties).toBe(0.25);
+
+      // 3. Why am I making mistakes?
+      expect(fiveQ.whyAmIMakingMistakes.negativeMarkPenalty.detected).toBe(true);
+      expect(fiveQ.whyAmIMakingMistakes.timePressure.detected).toBe(true);
+
+      // 4. How am I improving?
+      expect(fiveQ.howAmIImproving.trendStatus).toBe("insufficient_data");
+
+      // 5. What should I do next?
+      expect(fiveQ.whatShouldIDoNext.recommendedAction).toBeDefined();
+      expect(fiveQ.whatShouldIDoNext.actionSteps.length).toBeGreaterThan(0);
     });
   });
 });

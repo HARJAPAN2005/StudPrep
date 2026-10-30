@@ -21,6 +21,9 @@ import type {
   SubjectBreakdown,
   ScoreTrendPoint,
   AnalyticsDashboardPayload,
+  FiveQuestionsDiagnostic,
+  MistakeDiagnosis,
+  MistakeDiagnosisFactor,
 } from "@/lib/schemas/analytics";
 import type { QuestionGradingResult } from "@/lib/schemas/grading";
 
@@ -301,6 +304,245 @@ export function computeScoreTrend(historyRows: ExamHistoryRow[]): {
 }
 
 /**
+ * Calculates code-driven diagnosis of reasons behind student mistakes ("Why am I making mistakes?").
+ * Never invents reasons — purely derives from attempt pacing, negative marking, difficulty deltas, and recurring gaps.
+ */
+export function computeMistakeDiagnosis(
+  historyRows: ExamHistoryRow[],
+  topicAnalytics: TopicAnalytic[],
+  difficultyBreakdown: DifficultyBreakdown,
+  skipRate: number,
+  negativeMarkImpact: number,
+  totalQuestions: number,
+  totalTimeSpentSeconds: number
+): MistakeDiagnosis {
+  const avgSecondsPerQ = totalQuestions > 0 ? Math.round(totalTimeSpentSeconds / totalQuestions) : 0;
+
+  // 1. Time Pressure / Pacing
+  // Evidenced by: high skip rate (> 12%) or average time < 25s with high error rate
+  const isRushed = avgSecondsPerQ > 0 && avgSecondsPerQ < 25;
+  const isHighSkip = skipRate > 12;
+  const timePressureDetected = isHighSkip || isRushed;
+  const timePressureRationale = isHighSkip
+    ? `You skipped ${skipRate}% of questions, pointing to running out of time or avoidance under pacing pressure.`
+    : isRushed
+      ? `You spent only ${avgSecondsPerQ}s per question on average, which indicates rushing through items.`
+      : `Pacing was controlled at ${avgSecondsPerQ}s per question with a manageable ${skipRate}% skip rate.`;
+
+  // 2. Negative Marking Penalty / Unwarranted Guessing
+  const penaltyDetected = negativeMarkImpact > 0;
+  const penaltyRationale = penaltyDetected
+    ? `You lost ${negativeMarkImpact} marks from negative penalties. Blind guessing reduced your score below what selective omission would yield.`
+    : `No marks were lost to negative penalty deductions.`;
+
+  // 3. Difficulty Cliff (advanced complexity friction vs basic concepts)
+  const easyAcc = difficultyBreakdown.easy.total > 0 ? difficultyBreakdown.easy.accuracy : 0;
+  const hardAcc = difficultyBreakdown.hard.total > 0 ? difficultyBreakdown.hard.accuracy : 0;
+  const hasHardQuestions = difficultyBreakdown.hard.total >= 2;
+  const difficultyCliffDetected = hasHardQuestions && easyAcc >= 65 && hardAcc < 45;
+  const difficultyCliffRationale = difficultyCliffDetected
+    ? `Clear performance cliff: ${easyAcc}% on easy items dropping to ${hardAcc}% on hard items. Core principles are grasped, but complex multi-step problems create friction.`
+    : hasHardQuestions
+      ? `Performance between easy (${easyAcc}%) and hard (${hardAcc}%) questions remained relatively consistent.`
+      : `Insufficient hard questions encountered yet to determine complexity threshold.`;
+
+  // 4. Recurring Topic Mistakes (mistakes in the same topic across >= 2 attempts)
+  const recurringMistakes: MistakeDiagnosis["recurringMistakes"] = topicAnalytics
+    .filter((t) => t.examCount >= 2 && t.incorrectCount >= 2)
+    .map((t) => ({
+      topic: t.topic,
+      incorrectCount: t.incorrectCount,
+      examCount: t.examCount,
+    }));
+
+  // 5. Compile Primary Factors supported by code evidence
+  const primaryFactors: MistakeDiagnosisFactor[] = [];
+
+  if (penaltyDetected) {
+    primaryFactors.push({
+      type: "penalty_guessing",
+      title: "Tactical Guessing Penalty",
+      evidence: `Lost ${negativeMarkImpact} marks to penalty deductions. Skipping uncertain questions will protect your score.`,
+    });
+  }
+
+  if (timePressureDetected) {
+    primaryFactors.push({
+      type: "time_pressure",
+      title: "Pacing & Time Pressure",
+      evidence: isHighSkip
+        ? `${skipRate}% of all exam items were left unattempted.`
+        : `Rushed pacing at ${avgSecondsPerQ}s/question.`,
+    });
+  }
+
+  if (difficultyCliffDetected) {
+    primaryFactors.push({
+      type: "difficulty_cliff",
+      title: "High-Complexity Problem Friction",
+      evidence: `Accuracy drops from ${easyAcc}% on easy items to ${hardAcc}% on hard items.`,
+    });
+  }
+
+  if (recurringMistakes.length > 0) {
+    const topRecurring = recurringMistakes.slice(0, 2).map((r) => r.topic).join(", ");
+    primaryFactors.push({
+      type: "conceptual_gap",
+      title: "Recurring Topic Misconceptions",
+      evidence: `Persistent errors detected in ${topRecurring} across multiple completed sessions.`,
+    });
+  }
+
+  return {
+    timePressure: {
+      detected: timePressureDetected,
+      rationale: timePressureRationale,
+      skipRate,
+      avgSecondsPerQuestion: avgSecondsPerQ,
+    },
+    negativeMarkPenalty: {
+      detected: penaltyDetected,
+      marksLost: negativeMarkImpact,
+      rationale: penaltyRationale,
+    },
+    difficultyCliff: {
+      detected: difficultyCliffDetected,
+      easyAccuracy: easyAcc,
+      hardAccuracy: hardAcc,
+      rationale: difficultyCliffRationale,
+    },
+    recurringMistakes,
+    primaryFactors,
+  };
+}
+
+/**
+ * Builds the complete answers to the 5 Core Questions requested by the diagnostic system:
+ * 1. What am I good at? (Strong topics backed by actual attempts)
+ * 2. Where am I losing marks? (Weak topics and recurring mistakes)
+ * 3. Why am I making mistakes? (Calculated evidence: conceptual, time pressure, calculation/guessing)
+ * 4. How am I improving? (Trend over completed attempts)
+ * 5. What should I do next? (Focused practice and revision plan)
+ */
+export function computeFiveQuestionsDiagnostic(
+  historyRows: ExamHistoryRow[],
+  topicAnalytics: TopicAnalytic[],
+  difficultyBreakdown: DifficultyBreakdown,
+  scoreTrend: ScoreTrendPoint[],
+  trendSufficient: boolean,
+  skipRate: number,
+  negativeMarkImpact: number,
+  totalQuestions: number,
+  totalTimeSpentSeconds: number
+): FiveQuestionsDiagnostic {
+  // 1. What am I good at? (Strong topics: accuracy >= 70% or overallScore >= 65%)
+  const strongTopics = topicAnalytics
+    .filter((t) => t.accuracy >= 70 || t.masteryLevel === "mastered")
+    .sort((a, b) => b.accuracy - a.accuracy);
+
+  const strongSummary = strongTopics.length > 0
+    ? `Demonstrated mastery in ${strongTopics.length} topic${strongTopics.length === 1 ? "" : "s"}, led by ${strongTopics[0].topic} (${strongTopics[0].accuracy}% accuracy across ${strongTopics[0].totalQuestions} questions).`
+    : `Complete more practice attempts to establish your foundational strong topics.`;
+
+  // 2. Where am I losing marks? (Weak topics: accuracy < 65% or needs_review)
+  const weakTopics = topicAnalytics
+    .filter((t) => t.accuracy < 65 || t.masteryLevel === "needs_review")
+    .sort((a, b) => a.accuracy - b.accuracy); // worst first
+
+  const totalUnattemptedQ = historyRows.reduce((s, r) => s + r.unansweredCount, 0);
+  const totalIncorrectQ = historyRows.reduce((s, r) => s + r.incorrectCount, 0);
+
+  const mistakeDiagnosis = computeMistakeDiagnosis(
+    historyRows,
+    topicAnalytics,
+    difficultyBreakdown,
+    skipRate,
+    negativeMarkImpact,
+    totalQuestions,
+    totalTimeSpentSeconds
+  );
+
+  const recurringMistakeTopics = mistakeDiagnosis.recurringMistakes.map((r) => r.topic);
+
+  const weakSummary = weakTopics.length > 0
+    ? `Marks are predominantly lost in ${weakTopics[0].topic} (${weakTopics[0].accuracy}% accuracy) along with ${totalIncorrectQ} incorrect answers and ${totalUnattemptedQ} skipped questions.`
+    : `No severe topic deficiencies identified yet across your completed attempts.`;
+
+  // 4. How am I improving?
+  let trendStatus: FiveQuestionsDiagnostic["howAmIImproving"]["trendStatus"] = "insufficient_data";
+  let scoreDelta: number | null = null;
+  let trendSummary = `Complete at least ${MIN_TREND_EXAMS} exam attempts to establish an authentic trend.`;
+
+  if (trendSufficient && scoreTrend.length >= 2) {
+    const firstScore = scoreTrend[0].score;
+    const latestScore = scoreTrend[scoreTrend.length - 1].score;
+    scoreDelta = roundTwo(latestScore - firstScore);
+
+    if (scoreDelta > 3) {
+      trendStatus = "improving";
+      trendSummary = `Score trajectory is improving (+${scoreDelta}% gained from Attempt 1 to Attempt ${scoreTrend.length}).`;
+    } else if (scoreDelta < -3) {
+      trendStatus = "declining";
+      trendSummary = `Score trajectory has dipped (${scoreDelta}% from Attempt 1 to Attempt ${scoreTrend.length}). Review recent weak topics.`;
+    } else {
+      trendStatus = "stable";
+      trendSummary = `Score trajectory has held steady within 3% across ${scoreTrend.length} completed attempts.`;
+    }
+  }
+
+  // 5. What should I do next?
+  const topFocus = weakTopics.length > 0 ? weakTopics[0].topic : null;
+  const actionSteps: string[] = [];
+
+  if (topFocus) {
+    actionSteps.push(`Targeted drill on ${topFocus} (currently at ${weakTopics[0].accuracy}% accuracy).`);
+  }
+  if (mistakeDiagnosis.negativeMarkPenalty.detected) {
+    actionSteps.push(`Practice tactical omission: skip uncertain questions to eliminate the ${negativeMarkImpact} penalty deductions.`);
+  }
+  if (mistakeDiagnosis.timePressure.detected) {
+    actionSteps.push(`Set a strict 60-second limit per question during your next practice sprint to address pacing.`);
+  }
+  if (actionSteps.length === 0) {
+    actionSteps.push("Generate a full-length mixed practice exam to maintain subject mastery.");
+  }
+
+  const recommendedAction = topFocus
+    ? `Focus immediate practice on ${topFocus} and address ${mistakeDiagnosis.primaryFactors[0]?.title || "pacing"}.`
+    : "Continue balanced practice sprints across your subject syllabi.";
+
+  return {
+    whatAmIGoodAt: {
+      strongTopics,
+      summary: strongSummary,
+    },
+    whereAmILosingMarks: {
+      weakTopics,
+      marksLostBreakdown: {
+        penalties: negativeMarkImpact,
+        unattemptedMarks: totalUnattemptedQ,
+        incorrectMarks: totalIncorrectQ,
+      },
+      recurringMistakeTopics,
+      summary: weakSummary,
+    },
+    whyAmIMakingMistakes: mistakeDiagnosis,
+    howAmIImproving: {
+      trendStatus,
+      scoreDelta,
+      summary: trendSummary,
+      attemptsCount: scoreTrend.length,
+    },
+    whatShouldIDoNext: {
+      topFocusTopic: topFocus,
+      recommendedAction,
+      actionSteps,
+      drillUrl: topFocus ? `/dashboard/exams/builder?topic=${encodeURIComponent(topFocus)}` : null,
+    },
+  };
+}
+
+/**
  * Master aggregation function that produces the complete analytics dashboard payload.
  */
 export function buildAnalyticsDashboard(
@@ -318,6 +560,38 @@ export function buildAnalyticsDashboard(
       medium: { total: 0, correct: 0, accuracy: 0 },
       hard: { total: 0, correct: 0, accuracy: 0 },
     };
+    const emptyFiveQuestions: FiveQuestionsDiagnostic = {
+      whatAmIGoodAt: {
+        strongTopics: [],
+        summary: "Complete your first exam to identify your strengths.",
+      },
+      whereAmILosingMarks: {
+        weakTopics: [],
+        marksLostBreakdown: { penalties: 0, unattemptedMarks: 0, incorrectMarks: 0 },
+        recurringMistakeTopics: [],
+        summary: "No exam attempts on record.",
+      },
+      whyAmIMakingMistakes: {
+        timePressure: { detected: false, rationale: "No data.", skipRate: 0, avgSecondsPerQuestion: 0 },
+        negativeMarkPenalty: { detected: false, marksLost: 0, rationale: "No data." },
+        difficultyCliff: { detected: false, easyAccuracy: 0, hardAccuracy: 0, rationale: "No data." },
+        recurringMistakes: [],
+        primaryFactors: [],
+      },
+      howAmIImproving: {
+        trendStatus: "insufficient_data",
+        scoreDelta: null,
+        summary: "Complete at least 3 exams to track your improvement trend.",
+        attemptsCount: 0,
+      },
+      whatShouldIDoNext: {
+        topFocusTopic: null,
+        recommendedAction: "Start by sitting a diagnostic practice exam.",
+        actionSteps: ["Select a syllabus material", "Configure your first practice test"],
+        drillUrl: null,
+      },
+    };
+
     return {
       studentId,
       generatedAt: new Date().toISOString(),
@@ -334,6 +608,7 @@ export function buildAnalyticsDashboard(
       subjectBreakdowns: [],
       topicAnalytics: [],
       difficultyBreakdown: empty,
+      fiveQuestions: emptyFiveQuestions,
       examHistory: [],
       hasData: false,
     };
@@ -351,6 +626,19 @@ export function buildAnalyticsDashboard(
   const totalTimeSpent = historyRows.reduce((s, r) => s + r.timeSpentSeconds, 0);
   const totalNegativeImpact = roundTwo(historyRows.reduce((s, r) => s + r.negativeMarksLost, 0));
   const allAccuracies = finalized.map((a) => Number(a.accuracy ?? 0));
+  const skipRate = safePct(totalUnanswered, totalQ);
+
+  const fiveQuestions = computeFiveQuestionsDiagnostic(
+    historyRows,
+    topicAnalytics,
+    difficultyBreakdown,
+    scoreTrend,
+    trendSufficient,
+    skipRate,
+    totalNegativeImpact,
+    totalQ,
+    totalTimeSpent
+  );
 
   return {
     studentId,
@@ -361,13 +649,14 @@ export function buildAnalyticsDashboard(
     overallAvgScore: roundTwo(allScores.reduce((a, b) => a + b, 0) / allScores.length),
     overallAccuracy: roundTwo(allAccuracies.reduce((a, b) => a + b, 0) / allAccuracies.length),
     bestScore: Math.max(...allScores),
-    skipRate: safePct(totalUnanswered, totalQ),
+    skipRate,
     negativeMarkImpact: totalNegativeImpact,
     scoreTrend,
     trendSufficient,
     subjectBreakdowns,
     topicAnalytics,
     difficultyBreakdown,
+    fiveQuestions,
     examHistory: historyRows,
     hasData: true,
   };

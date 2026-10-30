@@ -34,7 +34,6 @@ import {
 import { getAIProvider } from "@/lib/ai/provider";
 import type { QuestionGradingResult } from "@/lib/schemas/grading";
 import type { Json } from "@/types/supabase";
-import { z } from "zod";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -169,6 +168,7 @@ export async function generateRevisionPlanAction(): Promise<{
       totalExams: payload.totalExams,
       overallAvgScore: payload.overallAvgScore,
       overallAccuracy: payload.overallAccuracy,
+      mistakeDiagnosis: payload.fiveQuestions.whyAmIMakingMistakes,
       topicAnalytics: payload.topicAnalytics
         .slice(0, 30) // cap at 30 to keep prompt bounded
         .map((t) => ({
@@ -197,10 +197,11 @@ export async function generateRevisionPlanAction(): Promise<{
     }
 
     const prompt = `
-Generate a personalised revision plan for this student based ONLY on their performance data below.
-Do NOT fabricate statistics. If a topic has isLowSample=true, acknowledge this is a rough estimate.
+Generate a personalised revision plan for this student based ONLY on their code-calculated performance data below.
+Do NOT invent student weaknesses. The underlying mistake metrics (time pressure, penalty guessing, difficulty drop-offs, recurring topic gaps) have already been calculated deterministically in code (see mistakeDiagnosis). Ground your interpretations strictly in these metrics.
+If a topic has isLowSample=true, acknowledge this is a rough estimate.
 
-Student Performance Summary:
+Student Performance Summary & Code-Calculated Mistake Metrics:
 ${JSON.stringify(inputParsed.data, null, 2)}
 
 Return a JSON object with:

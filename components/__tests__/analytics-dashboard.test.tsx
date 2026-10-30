@@ -33,6 +33,34 @@ const EMPTY_PAYLOAD: AnalyticsDashboardPayload = {
     medium: { total: 0, correct: 0, accuracy: 0 },
     hard: { total: 0, correct: 0, accuracy: 0 },
   },
+  fiveQuestions: {
+    whatAmIGoodAt: { strongTopics: [], summary: "Complete your first exam to identify your strengths." },
+    whereAmILosingMarks: {
+      weakTopics: [],
+      marksLostBreakdown: { penalties: 0, unattemptedMarks: 0, incorrectMarks: 0 },
+      recurringMistakeTopics: [],
+      summary: "No exam attempts on record.",
+    },
+    whyAmIMakingMistakes: {
+      timePressure: { detected: false, rationale: "No data.", skipRate: 0, avgSecondsPerQuestion: 0 },
+      negativeMarkPenalty: { detected: false, marksLost: 0, rationale: "No data." },
+      difficultyCliff: { detected: false, easyAccuracy: 0, hardAccuracy: 0, rationale: "No data." },
+      recurringMistakes: [],
+      primaryFactors: [],
+    },
+    howAmIImproving: {
+      trendStatus: "insufficient_data",
+      scoreDelta: null,
+      summary: "Complete at least 3 exams to track your improvement trend.",
+      attemptsCount: 0,
+    },
+    whatShouldIDoNext: {
+      topFocusTopic: null,
+      recommendedAction: "Start by sitting a diagnostic practice exam.",
+      actionSteps: ["Select a syllabus material", "Configure your first practice test"],
+      drillUrl: null,
+    },
+  },
   examHistory: [],
   hasData: false,
 };
@@ -101,6 +129,92 @@ const POPULATED_PAYLOAD: AnalyticsDashboardPayload = {
     easy: { total: 10, correct: 9, accuracy: 90 },
     medium: { total: 15, correct: 11, accuracy: 73 },
     hard: { total: 5, correct: 2, accuracy: 40 },
+  },
+  fiveQuestions: {
+    whatAmIGoodAt: {
+      strongTopics: [
+        {
+          topic: "Algebra",
+          totalQuestions: 15,
+          correctCount: 12,
+          incorrectCount: 3,
+          unansweredCount: 0,
+          accuracy: 80,
+          overallScore: 80,
+          marksObtained: 12,
+          maxMarks: 15,
+          masteryLevel: "mastered",
+          isLowSample: false,
+          examCount: 3,
+        },
+      ],
+      summary: "Demonstrated mastery in Algebra (80% accuracy).",
+    },
+    whereAmILosingMarks: {
+      weakTopics: [
+        {
+          topic: "Calculus",
+          totalQuestions: 3,
+          correctCount: 1,
+          incorrectCount: 1,
+          unansweredCount: 1,
+          accuracy: 50,
+          overallScore: 33,
+          marksObtained: 1,
+          maxMarks: 3,
+          masteryLevel: "needs_review",
+          isLowSample: true,
+          examCount: 2,
+        },
+      ],
+      marksLostBreakdown: { penalties: 2.5, unattemptedMarks: 1, incorrectMarks: 4 },
+      recurringMistakeTopics: ["Calculus"],
+      summary: "Marks are predominantly lost in Calculus.",
+    },
+    whyAmIMakingMistakes: {
+      timePressure: {
+        detected: true,
+        rationale: "You skipped 15% of questions under pacing pressure.",
+        skipRate: 15,
+        avgSecondsPerQuestion: 60,
+      },
+      negativeMarkPenalty: {
+        detected: true,
+        marksLost: 2.5,
+        rationale: "Lost 2.5 marks to penalties.",
+      },
+      difficultyCliff: {
+        detected: true,
+        easyAccuracy: 90,
+        hardAccuracy: 40,
+        rationale: "Accuracy drops from 90% on easy to 40% on hard.",
+      },
+      recurringMistakes: [{ topic: "Calculus", incorrectCount: 1, examCount: 2 }],
+      primaryFactors: [
+        {
+          type: "penalty_guessing",
+          title: "Tactical Guessing Penalty",
+          evidence: "Lost 2.5 marks to penalty deductions.",
+        },
+        {
+          type: "time_pressure",
+          title: "Pacing & Time Pressure",
+          evidence: "15% of all exam items were left unattempted.",
+        },
+      ],
+    },
+    howAmIImproving: {
+      trendStatus: "improving",
+      scoreDelta: 20,
+      summary: "Score trajectory is improving (+20% gained from Attempt 1 to Attempt 3).",
+      attemptsCount: 3,
+    },
+    whatShouldIDoNext: {
+      topFocusTopic: "Calculus",
+      recommendedAction: "Focus immediate practice on Calculus and address Tactical Guessing Penalty.",
+      actionSteps: ["Targeted drill on Calculus", "Practice tactical omission under negative marking"],
+      drillUrl: "/dashboard/exams/builder?topic=Calculus",
+    },
   },
   examHistory: [
     {
@@ -182,18 +296,18 @@ describe("AnalyticsDashboardClient Component", () => {
     render(<AnalyticsDashboardClient payload={POPULATED_PAYLOAD} />);
 
     // Calculus isLowSample=true
-    expect(screen.getByText("Calculus")).toBeDefined();
+    expect(screen.getAllByText("Calculus").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Estimate — fewer than 5 questions/i)).toBeDefined();
 
     // Algebra isLowSample=false, shouldn't have caveat
-    expect(screen.getByText("Algebra")).toBeDefined();
+    expect(screen.getAllByText("Algebra").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders subject breakdown and difficulty breakdown", () => {
     render(<AnalyticsDashboardClient payload={POPULATED_PAYLOAD} />);
 
     expect(screen.getAllByText("Mathematics").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Improving/i)).toBeDefined();
+    expect(screen.getAllByText(/Improving/i).length).toBeGreaterThanOrEqual(1);
 
     expect(screen.getByText("easy")).toBeDefined();
     expect(screen.getAllByText("90%").length).toBeGreaterThanOrEqual(1);
@@ -208,6 +322,31 @@ describe("AnalyticsDashboardClient Component", () => {
 
     expect(screen.getByText("JAMB Mathematics Mock 3")).toBeDefined();
     expect(screen.getByRole("link", { name: "Review" })).toBeDefined();
+  });
+
+  it("renders the Five Core Diagnostic Questions section clearly", () => {
+    render(<AnalyticsDashboardClient payload={POPULATED_PAYLOAD} />);
+
+    // 1. What am I good at?
+    expect(screen.getByText(/1\. What am I good at\?/i)).toBeDefined();
+    expect(screen.getByText(/Demonstrated mastery in Algebra/i)).toBeDefined();
+
+    // 2. Where am I losing marks?
+    expect(screen.getByText(/2\. Where am I losing marks\?/i)).toBeDefined();
+    expect(screen.getByText(/Marks are predominantly lost in Calculus/i)).toBeDefined();
+
+    // 3. Why am I making mistakes?
+    expect(screen.getByText(/3\. Why am I making mistakes\?/i)).toBeDefined();
+    expect(screen.getAllByText(/Tactical Guessing Penalty/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Pacing & Time Pressure/i)).toBeDefined();
+
+    // 4. How am I improving?
+    expect(screen.getByText(/4\. How am I improving\?/i)).toBeDefined();
+    expect(screen.getAllByText(/\+20%/i).length).toBeGreaterThanOrEqual(1);
+
+    // 5. What should I do next?
+    expect(screen.getByText(/5\. What should I do next\?/i)).toBeDefined();
+    expect(screen.getByRole("link", { name: /Drill Weakest Topic/i })).toBeDefined();
   });
 
   it("generates AI revision plan when button is clicked", async () => {
@@ -244,7 +383,7 @@ describe("AnalyticsDashboardClient Component", () => {
     await waitFor(() => {
       expect(actionSpy).toHaveBeenCalled();
       expect(screen.getByText(/Prioritize Calculus fundamentals/i)).toBeDefined();
-      expect(screen.getByText(/CRITICAL/i)).toBeDefined();
+      expect(screen.getAllByText(/critical/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/Review limits and derivatives/i)).toBeDefined();
       expect(screen.getByText(/Suggested practice sessions/i)).toBeDefined();
       expect(screen.getByText("4")).toBeDefined();

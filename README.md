@@ -1,6 +1,6 @@
-# StudPilot · AI-Powered CBT Examination Preparation Platform
+# StudPrep · AI-Powered CBT Examination Preparation Platform
 
-> **StudPilot** is a high-stakes Computer-Based Testing (CBT) and diagnostic preparation platform tailored for West African and professional examinations (JAMB UTME, WAEC WASSCE, NECO SSCE, and ICAN). It turns raw study materials and past questions into rigorous, timed exam simulations with instant diagnostic feedback.
+> **StudPrep** is a high-stakes Computer-Based Testing (CBT) and diagnostic preparation platform tailored for West African and professional examinations (JAMB UTME, WAEC WASSCE, NECO SSCE, and ICAN). It turns raw study materials and past questions into rigorous, timed exam simulations with instant diagnostic feedback.
 
 ---
 

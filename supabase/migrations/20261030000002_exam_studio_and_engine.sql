@@ -180,3 +180,4 @@ CREATE POLICY "exam_attempts: admins read all"
   USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   );
+

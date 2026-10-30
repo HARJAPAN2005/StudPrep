@@ -86,3 +86,4 @@ describe("Exam Studio Client Component", () => {
     expect(screen.getByText(/• 2 Total Marks/i)).toBeDefined();
   });
 });
+

@@ -126,3 +126,4 @@ describe("CBT Exam Runner Workstation Component", () => {
     expect(screen.getByText(/You have 2 unanswered questions remaining/i)).toBeDefined();
   });
 });
+

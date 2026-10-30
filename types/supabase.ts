@@ -539,6 +539,11 @@ export interface Database {
           score: number | null;
           marks_obtained: number | null;
           max_marks: number | null;
+          accuracy: number | null;
+          section_scores: Json;
+          topic_scores: Json;
+          detailed_results: Json;
+          attempt_number: number;
           correct_count: number;
           incorrect_count: number;
           unanswered_count: number;
@@ -562,6 +567,11 @@ export interface Database {
           score?: number | null;
           marks_obtained?: number | null;
           max_marks?: number | null;
+          accuracy?: number | null;
+          section_scores?: Json;
+          topic_scores?: Json;
+          detailed_results?: Json;
+          attempt_number?: number;
           correct_count?: number;
           incorrect_count?: number;
           unanswered_count?: number;
@@ -582,10 +592,46 @@ export interface Database {
           score?: number | null;
           marks_obtained?: number | null;
           max_marks?: number | null;
+          accuracy?: number | null;
+          section_scores?: Json;
+          topic_scores?: Json;
+          detailed_results?: Json;
+          attempt_number?: number;
           correct_count?: number;
           incorrect_count?: number;
           unanswered_count?: number;
           time_spent_seconds?: number;
+          updated_at?: string;
+        };
+        Relationships: NoRelationships;
+      };
+      reported_questions: {
+        Row: {
+          id: string;
+          attempt_id: string;
+          student_id: string;
+          question_id: string;
+          issue_type: "incorrect_answer_key" | "ambiguous_question" | "typo_formatting" | "outdated_syllabus" | "other";
+          comment: string | null;
+          status: "open" | "reviewed" | "resolved" | "dismissed";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          attempt_id: string;
+          student_id: string;
+          question_id: string;
+          issue_type: "incorrect_answer_key" | "ambiguous_question" | "typo_formatting" | "outdated_syllabus" | "other";
+          comment?: string | null;
+          status?: "open" | "reviewed" | "resolved" | "dismissed";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          issue_type?: "incorrect_answer_key" | "ambiguous_question" | "typo_formatting" | "outdated_syllabus" | "other";
+          comment?: string | null;
+          status?: "open" | "reviewed" | "resolved" | "dismissed";
           updated_at?: string;
         };
         Relationships: NoRelationships;

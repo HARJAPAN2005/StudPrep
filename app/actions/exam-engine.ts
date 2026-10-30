@@ -317,63 +317,24 @@ export async function submitExamAttemptAction(
       return { success: false, error: "Exam snapshot missing." };
     }
 
-    const questions = snapshot.questions as unknown as StudioQuestion[];
-    const answers = (attempt.answers as Record<string, string>) || {};
+    // Delegate scoring to deterministic server-side grading engine
+    const { gradeAndFinalizeAttemptAction } = await import("@/app/actions/grading");
+    const finalizeRes = await gradeAndFinalizeAttemptAction(attemptId);
 
-    let correctCount = 0;
-    let incorrectCount = 0;
-    let unansweredCount = 0;
-    let totalEarnedMarks = 0;
-    let totalMaxMarks = 0;
-
-    for (const q of questions) {
-      const qMarks = q.marks || 1.0;
-      const qNegative = q.negativeMarks || snapshot.negative_marking || 0.0;
-      totalMaxMarks += qMarks;
-
-      const candidateAnswer = answers[q.id];
-      if (!candidateAnswer) {
-        unansweredCount++;
-      } else if (candidateAnswer === q.correctOptionId) {
-        correctCount++;
-        totalEarnedMarks += qMarks;
-      } else {
-        incorrectCount++;
-        totalEarnedMarks -= qNegative;
-      }
+    if (!finalizeRes.success || !finalizeRes.payload) {
+      return { success: false, error: finalizeRes.error || "Grading failed." };
     }
 
-    // Clamp marks to 0 minimum
-    const finalMarksObtained = Math.max(0, totalEarnedMarks);
-    const scorePercentage = totalMaxMarks > 0 ? Math.round((finalMarksObtained / totalMaxMarks) * 100) : 0;
-
-    const now = new Date();
-    const startedAt = attempt.started_at ? new Date(attempt.started_at) : now;
-    const timeSpent = Math.max(0, Math.floor((now.getTime() - startedAt.getTime()) / 1000));
-
-    await supabase
-      .from("exam_attempts")
-      .update({
-        status: "submitted",
-        submitted_at: now.toISOString(),
-        score: scorePercentage,
-        marks_obtained: finalMarksObtained,
-        max_marks: totalMaxMarks,
-        correct_count: correctCount,
-        incorrect_count: incorrectCount,
-        unanswered_count: unansweredCount,
-        time_spent_seconds: timeSpent,
-      })
-      .eq("id", attemptId);
+    const { grading } = finalizeRes.payload;
 
     return {
       success: true,
-      score: scorePercentage,
-      marksObtained: finalMarksObtained,
-      maxMarks: totalMaxMarks,
-      correctCount,
-      incorrectCount,
-      unansweredCount,
+      score: grading.score,
+      marksObtained: grading.marksObtained,
+      maxMarks: grading.maxMarks,
+      correctCount: grading.correctCount,
+      incorrectCount: grading.incorrectCount,
+      unansweredCount: grading.unansweredCount,
     };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

@@ -144,6 +144,13 @@ Uploaded documents and extracted text are treated as **untrusted user input**, n
 - `pnpm audit` runs in CI on every push.
 - Dependabot alerts are reviewed weekly.
 
+### 11. Grading & Answer Key Disclosure Security (Phase 8)
+
+- **Pure Server-Authoritative Grading**: Objective scoring is calculated exclusively on the server using immutable snapshots. Client scores or marks submitted from browsers are rejected.
+- **Strict Answer Key Masking During Active Exams**: Solutions and answer keys are locked (`403 Forbidden`) until the candidate submits or the server deadline expires. Safe client DTOs strip all correct option IDs and explanations.
+- **Idempotent Atomic Finalization**: Finalized attempts cannot be modified, re-scored, or double-submitted. Concurrent requests receive identical, tamper-proof cached results.
+- **Student-Scoped Question Reporting**: The `reported_questions` table is secured with RLS (`auth.uid() = student_id`). Students cannot dispute questions or inspect reports belonging to other students.
+
 ---
 
 ## Security Checklist (Pre-deploy)

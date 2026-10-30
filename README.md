@@ -4,9 +4,17 @@
 
 ---
 
-## 🚀 Key Features (Phases 1 - 7 Completed)
+## 🚀 Key Features (Phases 1 - 8 Completed)
 
-1. **Examination Engine & CBT Runner (Phase 7)**:
+1. **Deterministic Server-Side Grading & Results Diagnostics (Phase 8)**:
+   - Pure algorithmic grading of objective question types (`single_choice`, `true_false`) with zero reliance on AI models as authoritative evaluators.
+   - Positive marks, configurable negative penalties, zero-mark clamping (scores >= 0), and section/topic score aggregation.
+   - Topic mastery classifications (`mastered` >= 75%, `competent` >= 50%, `needs_review` < 50%).
+   - Authentic historical progress tracking against previous attempts on the same configuration (baseline for first attempt, no fake percentiles).
+   - Filterable item review (All, Correct, Incorrect, Unanswered, Flagged) with worked solutions, distractor rationales, and page citations.
+   - AI-synthesized vs source paper question badges with review status.
+   - Candidate question report dialog and server handler persisting to `reported_questions`.
+2. **Examination Engine & CBT Runner (Phase 7)**:
    - Distraction-free dark workstation (`/exam/[id]`) with live countdown timer and optional fullscreen mode.
    - Pre-exam instructions modal with explicit testing rules and negative marking disclosures.
    - Server-authoritative deadlines with automatic timeout finalization.

@@ -205,3 +205,21 @@ The AI Document Intelligence pipeline processes ingested syllabus materials and 
 4. **Candidate Feedback Loop (`material_corrections`)**:
    - Candidates can edit inferred classification metadata (e.g. correct subject or educational level).
    - Candidates can flag extraction mistakes on individual questions or options, creating versioned audit records for continuous model evaluation.
+
+---
+
+### 3.3 Deterministic Grading & Results Diagnostics (Phase 8)
+
+1. **Server-Side Authoritative Evaluation (`lib/grading/grading-service.ts`)**:
+   - Objective question grading (`single_choice`, `true_false`) is 100% deterministic code. AI is strictly prohibited from serving as authoritative grader.
+   - Candidate answers are matched against protected option keys, applying positive marks, negative penalty deductions, and zero-mark clamping (final scores >= 0).
+   - Generates section-wise breakdowns (`section_scores`) and topic mastery profiles (`topic_scores`: `mastered` >= 75%, `competent` >= 50%, `needs_review` < 50%).
+2. **Authentic Historical Progress Tracking**:
+   - Compares score against prior attempts by the same student on the same exam snapshot.
+   - If no prior attempt exists, designates result as an initial baseline assessment.
+   - Strictly avoids unsupported predictions, artificial percentiles, or fake cohort rankings.
+3. **Post-Exam Review & Question Reporting (`reported_questions`)**:
+   - Results and worked solutions remain strictly locked (`403 Forbidden`) while an attempt is in progress.
+   - After submission or expiration, candidates review detailed worked rationales, distractor explanations, and page-level source references.
+   - Questions synthesized by AI are explicitly badged (`AI Synthesized` vs `Source Paper`).
+   - Candidates can flag disputed answer keys, ambiguous questions, or typos into `reported_questions` table with verified student ownership.

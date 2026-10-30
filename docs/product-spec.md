@@ -154,6 +154,17 @@ Manage Question Bank (edit, delete, adjust difficulty)
 | Subject breakdown | Bar chart: average score per subject |
 | Weak areas | List of questions the student has answered incorrectly most |
 
+### Phase 8 Specification: Deterministic Grading & Performance Diagnostics
+
+| Component | Specification |
+|---|---|
+| **Deterministic Grading Service** | Pure algorithmic scoring of objective questions (`single_choice`, `true_false`). AI is never used as authoritative grader. Supports positive marks, negative marking, and zero-mark clamping. |
+| **Section & Topic Diagnostics** | Computes section-wise scores and topic mastery classification (`mastered` >= 75%, `competent` >= 50%, `needs_review` < 50%). |
+| **Historical Comparison** | Tracks progress against previous attempts by the same student on the same configuration. Designates first attempt as baseline; avoids fake percentiles. |
+| **Item Review & Explanations** | Filterable by Correct, Incorrect, Unanswered, and Flagged. Displays student response, correct answer, step-by-step worked solution, distractor explanations, and page citations. |
+| **Source Provenance Badges** | Distinct visual badges for AI-synthesized items vs original source paper questions with review status. |
+| **Candidate Report Loop** | Modal enabling candidates to report ambiguous questions or disputed answer keys directly into `reported_questions`. |
+
 ---
 
 ## 5. Non-Functional Requirements
